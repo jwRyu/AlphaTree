@@ -11,6 +11,8 @@
 #include "allocator.h"
 #include "HQueue.hpp"
 
+#define img2iVidx(idx, width) (((idx)/(width)) + (width) + 3)
+
 void AlphaTree::AlphaFilter(Pixel* outimg, double lambda, uint32 area)
 {
 	uint32 i;
@@ -42,39 +44,126 @@ void AlphaTree::AlphaFilter(Pixel* outimg, double lambda, uint32 area)
 	delete filtered;
 }
 
-void AlphaTree::compute_dimg(uint8* dimg, uint32* dhist, Pixel* img, uint32 height, uint32 width, uint32 channel)
+void AlphaTree::compute_dimg(uint8* dimg, uint32* dhist, Pixel* img)
 {
 	uint32 dimgidx, imgidx, stride_w = width, i, j;
 
-	imgidx = dimgidx = 0;
-	for (i = 0; i < height - 1; i++)
+	if (connectivity == 4)
 	{
-		for (j = 0; j < width - 1; j++)
+		//   -  -  -
+		//   -  p  2
+		//   -  1  -
+		imgidx = dimgidx = 0;
+		for (i = 0; i < height - 1; i++)
 		{
+			for (j = 0; j < width - 1; j++)
+			{
+				dimg[dimgidx] = (uint8)(abs((int)img[imgidx + stride_w] - (int)img[imgidx]));
+				dhist[dimg[dimgidx++]]++;
+				dimg[dimgidx] = (uint8)(abs((int)img[imgidx + 1] - (int)img[imgidx]));
+				dhist[dimg[dimgidx++]]++;
+				imgidx++;
+			}
 			dimg[dimgidx] = (uint8)(abs((int)img[imgidx + stride_w] - (int)img[imgidx]));
 			dhist[dimg[dimgidx++]]++;
+			dimgidx++;
+			imgidx++;
+		}
+		for (j = 0; j < width - 1; j++)
+		{
+			dimgidx++;
 			dimg[dimgidx] = (uint8)(abs((int)img[imgidx + 1] - (int)img[imgidx]));
 			dhist[dimg[dimgidx++]]++;
 			imgidx++;
 		}
-		dimg[dimgidx] = (uint8)(abs((int)img[imgidx + stride_w] - (int)img[imgidx]));
-		dhist[dimg[dimgidx++]]++;
-		dimgidx++;
-		imgidx++;
+		img += width * height;
 	}
-	for (j = 0; j < width - 1; j++)
+	else if (connectivity == 8)
 	{
-		dimgidx++;
-		dimg[dimgidx] = (uint8)(abs((int)img[imgidx + 1] - (int)img[imgidx]));
-		dhist[dimg[dimgidx++]]++;
-		imgidx++;
+		//   -  -  -
+		//   -  p  4
+		//   1  2  3
+		imgidx = dimgidx = 0;
+		for (i = 0; i < height - 1; i++)
+		{
+			dimgidx++; //skip 1
+			dimg[dimgidx] = (uint8)(abs((int)img[imgidx + stride_w] - (int)img[imgidx]));//2
+			dhist[dimg[dimgidx++]]++;
+			dimg[dimgidx] = (uint8)(abs((int)img[imgidx + stride_w + 1] - (int)img[imgidx]));//3
+			dhist[dimg[dimgidx++]]++;
+			dimg[dimgidx] = (uint8)(abs((int)img[imgidx + 1] - (int)img[imgidx]));//4
+			dhist[dimg[dimgidx++]]++;
+			imgidx++;
+			for (j = 0; j < width - 1; j++)
+			{
+				dimg[dimgidx] = (uint8)(abs((int)img[imgidx + stride_w - 1] - (int)img[imgidx]));//1
+				dhist[dimg[dimgidx++]]++;
+				dimg[dimgidx] = (uint8)(abs((int)img[imgidx + stride_w] - (int)img[imgidx]));//2
+				dhist[dimg[dimgidx++]]++;
+				dimg[dimgidx] = (uint8)(abs((int)img[imgidx + stride_w + 1] - (int)img[imgidx]));//3
+				dhist[dimg[dimgidx++]]++;
+				dimg[dimgidx] = (uint8)(abs((int)img[imgidx + 1] - (int)img[imgidx]));//4
+				dhist[dimg[dimgidx++]]++;
+				imgidx++;
+			}
+			dimg[dimgidx] = (uint8)(abs((int)img[imgidx + stride_w - 1] - (int)img[imgidx]));//1
+			dhist[dimg[dimgidx++]]++;
+			dimg[dimgidx] = (uint8)(abs((int)img[imgidx + stride_w] - (int)img[imgidx]));//2
+			dhist[dimg[dimgidx++]]++;
+			dimgidx += 2;//skip 3,4
+			imgidx++;
+		}
+		for (j = 0; j < width - 1; j++)
+		{
+			dimgidx += 3; //skip 1,2,3
+			dimg[dimgidx] = (uint8)(abs((int)img[imgidx + 1] - (int)img[imgidx]));//4
+			dhist[dimg[dimgidx++]]++;
+			imgidx++;
+		}
+		img += width * height;
+
 	}
-	img += width * height;
 }
 
-void AlphaTree::Flood(Pixel* img, uint32 height, uint32 width, uint32 channel)
+void AlphaTree::init_isVisited(uint8 * isVisited)
 {
-	uint32 imgsize, dimgsize, nredges, max_level, current_level, next_level, x0, p, dissim;
+	uint64 *p = (uint64*)isVisited;
+	uint32 i, j;
+
+	memset(isVisited, 0, ((width + 2)*(height + 2) + 7) >> 3);
+	//First row
+	for (i = 0; i < (width + 2) >> 6; i++)
+	{
+		p[i] = 0xffffffffffffffff;
+	}
+	for (i = (width + 2) & ~(0x3f); i < width + 2; i++)
+		visit(isVisited, i);
+
+	//Middle rows
+	j = width + 2;
+	for (i = 0; i < height; i++)
+	{
+		visit(isVisited, j);
+		visit(isVisited, j + width + 1);
+		j += width + 2;
+	}
+
+	//Last row
+	i = (width + 2) * (height + 1);
+	while (i & 0x3f)
+		visit(isVisited, i++);
+	for (; i < (width + 2) * (height + 2) - 64; i++)
+	{
+		*(uint64*)(&isVisited[i>>3]) = 0xffffffffffffffff;
+		i += 64;
+	}
+	for (; i < (width + 2)*(height + 2); i++)
+		visit(isVisited, i++);
+}
+
+void AlphaTree::Flood(Pixel* img)
+{
+	uint32 imgsize, dimgsize, nredges, max_level, current_level, next_level, x0, p, q, dissim;
 	uint32 numlevels;
 	HQueue* hqueue;
 	uint32 *dhist;
@@ -82,37 +171,33 @@ void AlphaTree::Flood(Pixel* img, uint32 height, uint32 width, uint32 channel)
 	uint32 iChild, *levelroot;
 	uint8 *isVisited;
 	uint32 *pParentAry;
+	uint8 iNeighbour;
 
-	double ddhist[256];
+	height = 60;
+	width = 120;
 
 	imgsize = width * height;
-	nredges = width * (height - 1) + (width - 1) * height;
-	dimgsize = 2 * width * height; //To make indexing easier
+	nredges = width * (height - 1) + (width - 1) * height + (connectivity == 8) ? (width - 1) * (height - 1) * 2 : 0;
+	dimgsize = (connectivity >> 1) * width * height; //To make indexing easier
 	numlevels = 1 << (8 * sizeof(uint8));
 
+	//Temp memory allocation
 	dhist = (uint32*)Malloc((size_t)numlevels * sizeof(uint32));
 	dimg = (uint8*)Malloc((size_t)dimgsize * sizeof(uint8));
 	levelroot = (uint32*)Malloc((uint32)(numlevels + 1) * sizeof(uint32));
-	isVisited = (uint8*)Malloc((size_t)((imgsize + 7) >> 3));
+	isVisited = (uint8*)Malloc((size_t)((width + 2) * (height + 2) + 7) >> 3);
 	for (p = 0; p < numlevels; p++)
 		levelroot[p] = NULL_LEVELROOT;
 	memset(dhist, 0, (size_t)numlevels * sizeof(uint32));
-	memset(isVisited, 0, (size_t)((imgsize + 7) >> 3));
-
+	init_isVisited(isVisited);
+	
 	max_level = (uint8)(numlevels - 1);
 
-	compute_dimg(dimg, dhist, img, height, width, channel);
-	dhist[max_level]++;
+	//Calc. dissim, Histogram
+	compute_dimg(dimg, dhist, img);
+	dhist[max_level]++; //make a room for the root
 	hqueue = hqueue_new(nredges + 1, dhist, numlevels);
-
-	for (p = 0; p < 256; p++)
-		ddhist[p] = (double)dhist[p] / nredges;
-
-	this->height = height;
-	this->width = width;
-	this->channel = channel;
-	this->curSize = 0;
-
+	
 	//tree size estimation (TSE)
 	nrmsd = 0;
 	for (p = 0; p < numlevels; p++)
@@ -120,18 +205,19 @@ void AlphaTree::Flood(Pixel* img, uint32 height, uint32 width, uint32 channel)
 	nrmsd = sqrt((nrmsd - (double)nredges) / ((double)nredges * ((double)nredges - 1.0)));
 	this->maxSize = min(imgsize, (uint32)(imgsize * A * (exp(SIGMA * nrmsd) + B + M)));
 
-	//	cout << "BOO" << endl;
 	Free(dhist);
 
+	//Allocate parent array and nodes
 	this->parentAry = (uint32*)Malloc((size_t)imgsize * sizeof(uint32));
 	this->node = (AlphaNode*)Malloc((size_t)this->maxSize * sizeof(AlphaNode));
 	pParentAry = this->parentAry;
 
+	//put root node in levelroot
 	levelroot[max_level + 1] = NewAlphaNode((uint8)max_level);
 	this->node[levelroot[max_level + 1]].parentidx = levelroot[max_level + 1];
 
 	current_level = max_level;
-	x0 = imgsize >> 1;
+	x0 = imgsize >> 1; // First pixel (anything between 0 ~ imgsize-1)
 	hqueue_push(hqueue, x0, current_level);
 
 	//	free(dhist);
@@ -142,12 +228,24 @@ void AlphaTree::Flood(Pixel* img, uint32 height, uint32 width, uint32 channel)
 		while (hqueue->min_level <= current_level)
 		{
 			p = hqueue_pop(hqueue);
-			if (is_visited(isVisited, p))
+			if (is_visited(isVisited, img2iVidx(p, width)))
 			{
 				hqueue_find_min_level(hqueue);
 				continue;
 			}
-			visit(isVisited, p);
+			visit(isVisited, img2iVidx(p, width));
+
+			for (iNeighbour = 0; iNeighbour < connectivity; iNeighbour++)
+			{
+				q = p + neighbours[iNeighbour];
+				if (!is_visited(isVisited, img2iVidx(q, width)))
+				{
+					dissim = (uint32)dimg[dimg_idx_h(p - 1)];
+					hqueue_push(hqueue, p - 1, dissim);
+					if (levelroot[dissim] == NULL_LEVELROOT)
+						levelroot[dissim] = ANODE_CANDIDATE;
+				}
+			}
 
 			if (LEFT_AVAIL(p, width) && !is_visited(isVisited, p - 1))
 			{
@@ -219,7 +317,20 @@ void AlphaTree::Flood(Pixel* img, uint32 height, uint32 width, uint32 channel)
 }
 
 
-void AlphaTree::BuildAlphaTree(Pixel *img, uint32 height, uint32 width, uint32 channel)
+void AlphaTree::BuildAlphaTree(Pixel *img, uint32 height, uint32 width, uint32 channel, uint8 connectivity)
 {
-	Flood(img, height, width, channel);
+	this->height = height;
+	this->width = width;
+	this->channel = channel;
+	this->connectivity = connectivity;
+	neighbours[0] = -1;
+	neighbours[1] = +1;
+	neighbours[2] = -width;
+	neighbours[3] = width;
+	neighbours[4] = width - 1;
+	neighbours[5] = width + 1;
+	neighbours[6] = -width - 1;
+	neighbours[7] = -width + 1;
+
+	Flood(img);
 }

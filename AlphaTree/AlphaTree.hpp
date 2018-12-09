@@ -35,12 +35,15 @@ class AlphaTree
 	uint32 maxSize;
 	uint32 curSize;
 	uint32 height, width, channel;
+	uint8 connectivity;
 	AlphaNode* node;
 	uint32* parentAry;
+	uint32 neighbours[8];
 	double nrmsd;
 
-	void compute_dimg(uint8* dimg, uint32* dhist, Pixel* img, uint32 height, uint32 width, uint32 channel);
-	void Flood(Pixel* img, uint32 height, uint32 width, uint32 channel);
+	void compute_dimg(uint8 * dimg, uint32 * dhist, Pixel * img);
+	void init_isVisited(uint8 *isVisited);
+	void Flood(Pixel* img);
 	inline void connectPix2Node(uint32* parentAry, uint32 pidx, Pixel pix_val, AlphaNode* pNode, uint32 iNode) const
 	{	
 		parentAry[pidx] = iNode;
@@ -96,6 +99,6 @@ public:
 	~AlphaTree() { Free(node); Free(parentAry); }
 
 	void AlphaFilter(Pixel* outimg, double lambda, uint32 area);
-	void BuildAlphaTree(Pixel *img, uint32 height, uint32 width, uint32 channel);
+	void BuildAlphaTree(Pixel *img, uint32 height, uint32 width, uint32 channel, uint8 connectivity);
 	inline void clear() { Free(node); Free(parentAry); node = 0; parentAry = 0; }
 };
