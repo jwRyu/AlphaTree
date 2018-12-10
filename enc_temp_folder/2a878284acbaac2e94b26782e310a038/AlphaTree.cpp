@@ -105,8 +105,6 @@ void AlphaTree::compute_dimg(uint8* dimg, uint32* dhist, Pixel* img)
 			imgidx++;
 		}
 		img += width * height;
-
-
 	}
 	else if (connectivity == 8)
 	{

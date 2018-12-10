@@ -38,7 +38,7 @@ class AlphaTree
 	uint8 connectivity;
 	AlphaNode* node;
 	uint32* parentAry;
-	uint32 neighbours[8];
+	int neighbours[8];
 	double nrmsd;
 
 	void compute_dimg(uint8 * dimg, uint32 * dhist, Pixel * img);

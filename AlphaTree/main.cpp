@@ -39,7 +39,8 @@ int main(int argc, char **argv)
 	if (fcheck.good())
 	{
 		cout << "Output file \"" << OUTPUT_FNAME << "\" already exists. Overwrite? (y/n/a)";
-		cin >> in;
+		//cin >> in;
+		in = 'y';
 		if (in == 'a')
 		{
 			f.open(OUTPUT_FNAME, std::ofstream::app);
@@ -89,7 +90,7 @@ int main(int argc, char **argv)
 			//memuse = max_memuse = 0;
 			auto wcts = std::chrono::system_clock::now();
 
-			tree.BuildAlphaTree((Pixel*)cvimg.data, height, width, channel);
+			tree.BuildAlphaTree((Pixel*)cvimg.data, height, width, channel, 4);
 
 			//outimg = new Pixel[width * height];
 
