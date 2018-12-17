@@ -14,6 +14,17 @@ void* Malloc(size_t size)
 	return (void*)((size_t*)pNew + 1);
 }
 
+void* Calloc(size_t num, size_t size)
+{
+	void* pNew = calloc(num, size + sizeof(size_t));
+
+	memuse += size;
+	max_memuse = max(memuse, max_memuse);
+
+	*((size_t*)pNew) = size;
+	return (void*)((size_t*)pNew + 1);
+}
+
 void* Realloc(void* ptr, size_t size)
 {
 	void* pOld = (void*)((size_t*)ptr - 1);

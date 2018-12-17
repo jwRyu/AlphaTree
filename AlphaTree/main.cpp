@@ -20,7 +20,7 @@ using namespace cv;
 #define OUTIMG_FNAME "C:/Users/jwryu/RUG/2018/AlphaTree/outimg.jpg"
 #define INPUTIMAGE_DIR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/OrientedAlphaTree_test"
 
-#define REPEAT 1	//program repetition for accurate runtime measuring
+#define REPEAT 10	//program repetition for accurate runtime measuring
 
 int main(int argc, char **argv)
 {
@@ -32,6 +32,8 @@ int main(int argc, char **argv)
 	ifstream fcheck;
 	uint32 contidx;
 	char in;
+	Pixel testimg[9] = { 4, 4, 0, 4, 1, 2, 0, 1, 2 };
+	uint64* tmp,* tmp1;
 
 	contidx = 0;
 	//	f.open("C:/Users/jwryu/RUG/2018/AlphaTree/AlphaTree_grey_Exp.dat", std::ofstream::app);
@@ -88,9 +90,10 @@ int main(int argc, char **argv)
 		for (int testrep = 0; testrep < REPEAT; testrep++)
 		{
 			//memuse = max_memuse = 0;
+			//tmp1 = (uint64*)malloc(10000000);
 			auto wcts = std::chrono::system_clock::now();
-
-			tree.BuildAlphaTree((Pixel*)cvimg.data, height, width, channel, 4);
+			//tree.BuildAlphaTree((Pixel*)cvimg.data, height, width, channel, 4);
+			tree.BuildAlphaTree(testimg, 3, 3, 1, 4);
 
 			//outimg = new Pixel[width * height];
 
@@ -100,6 +103,8 @@ int main(int argc, char **argv)
 			//imwrite(outfname,
 
 			std::chrono::duration<double> wctduration = (std::chrono::system_clock::now() - wcts);
+			free(tmp1);
+			//free(tmp1);
 
 			//tree.AlphaFilter((Pixel*)outimg.data, 30, 100);
 
@@ -108,10 +113,11 @@ int main(int argc, char **argv)
 		//	waitKey(0);
 
 			runtime = wctduration.count();
-			minruntime = testrep == 0 ? runtime : min(runtime, minruntime);
+			if(tmp == tmp1)
+				minruntime = testrep == 0 ? runtime : min(runtime, minruntime);
 
-			if (testrep < (REPEAT - 1))
-				tree.clear();
+	//		if (testrep < (REPEAT - 1))
+//				tree.clear();
 		}
 		//f << p.path().string().c_str() << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << nrmsd << '\t' << tree->maxSize << '\t' << tree->curSize << '\t' << minruntime << endl;
 

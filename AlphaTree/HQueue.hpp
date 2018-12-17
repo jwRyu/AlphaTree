@@ -12,7 +12,7 @@ struct HQueue
 	uint32 min_level, max_level;
 };
 
-struct neighidx {
+struct neighbour_idx {
 	//  -  3  -
 	//  2  p  1
 	//  -  0  -
@@ -21,7 +21,7 @@ struct neighidx {
 };
 
 void hqueue_new(HQueue<uint32>** hqueue, uint64 qsize, uint32 *dhist, uint32 dhistsize);
-void hqueue_new(HQueue<neighidx>** hqueue, uint64 qsize, uint32 *dhist, uint32 dhistsize, uint8 neighbours);
+void hqueue_new(HQueue<neighbour_idx>** hqueue, uint64 qsize, uint32 *dhist, uint32 dhistsize, uint8 neighbours);
 
 template <typename T>
 void hqueue_free(HQueue<T>* hqueue)
@@ -44,7 +44,7 @@ inline void hqueue_push(HQueue<uint32>* hqueue, uint32 pidx, uint32 level)
 }
 
 
-inline void hqueue_push(HQueue<neighidx>* hqueue, uint32 idx, uint8 neighbor, uint32 level)
+inline void hqueue_push(HQueue<neighbour_idx>* hqueue, uint32 idx, uint8 neighbor, uint32 level)
 {
 	hqueue->min_level = min(level, hqueue->min_level);
 #if DEBUG

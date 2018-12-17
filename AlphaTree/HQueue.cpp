@@ -23,16 +23,16 @@ void hqueue_new(HQueue<uint32>** hqueue, uint64 qsize, uint32 *dhist, uint32 dhi
 	(*hqueue)->cur[dhistsize] = 1;
 }
 
-void hqueue_new(HQueue<neighidx>** hqueue, uint64 qsize, uint32 *dhist, uint32 dhistsize, uint8 neighbours)
+void hqueue_new(HQueue<neighbour_idx>** hqueue, uint64 qsize, uint32 *dhist, uint32 dhistsize, uint8 neighbours)
 {
 	uint32 i, nn = neighbours >> 1;
 	int shamt;
-	(*hqueue) = (HQueue<neighidx>*)Malloc(sizeof(HQueue<neighidx>));
-	(*hqueue)->queue = (neighidx*)Malloc((size_t)qsize * nn * sizeof(neighidx));
+	(*hqueue) = (HQueue<neighbour_idx>*)Malloc(sizeof(HQueue<neighbour_idx>));
+	(*hqueue)->queue = (neighbour_idx*)Malloc((size_t)qsize * nn * sizeof(neighbour_idx));
 	(*hqueue)->bottom = (uint32*)Malloc((size_t)(dhistsize + 1) * sizeof(uint32));
 	(*hqueue)->cur = (uint32*)Malloc((size_t)(dhistsize + 1) * sizeof(uint32));
 
-	(*hqueue)->qsize = qsize;
+	(*hqueue)->qsize = qsize * nn;
 	(*hqueue)->min_level = (*hqueue)->max_level = dhistsize;
 	
 	for (shamt = -1; nn; nn >>= 1)
@@ -44,8 +44,8 @@ void hqueue_new(HQueue<neighidx>** hqueue, uint64 qsize, uint32 *dhist, uint32 d
 		(*hqueue)->bottom[i] = (*hqueue)->cur[i] = sum_hist;
 		sum_hist += dhist[i] << shamt;
 	}
-	(*hqueue)->bottom[dhistsize] = 0;
-	(*hqueue)->cur[dhistsize] = 1;
+	(*hqueue)->bottom[dhistsize] = sum_hist;
+	(*hqueue)->cur[dhistsize] = sum_hist + 1;
 }
 
 /*

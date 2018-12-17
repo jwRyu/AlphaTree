@@ -2,6 +2,7 @@
 
 #include "defines.h"
 #include "allocator.h"
+#include "NeighbourList.hpp"
 
 #define NULL_LEVELROOT		0xffffffff
 #define ANODE_CANDIDATE		0xfffffffe
@@ -41,7 +42,7 @@ class AlphaTree
 	int neighbours[8];
 	double nrmsd;
 
-	void compute_dimg(uint8 * dimg, uint32 * dhist, Pixel * img);
+	void compute_dimg(uint8 * dimg, NeighbourList<4>& nlist, uint32 * dhist, Pixel * img);
 	void init_isVisited(uint8 *isVisited);
 	void Flood(Pixel* img);
 	inline void connectPix2Node(uint32* parentAry, uint32 pidx, Pixel pix_val, AlphaNode* pNode, uint32 iNode) const
@@ -83,7 +84,7 @@ class AlphaTree
 
 		return this->curSize++;
 	}
-
+	
 	inline uint8 is_visited(uint8* isVisited, uint32 p) const
 	{
 		return (isVisited[p >> 3] >> (p & 7)) & 1;
@@ -93,6 +94,7 @@ class AlphaTree
 	{
 		isVisited[p >> 3] = isVisited[p >> 3] | (1 << (p & 7));
 	}
+	
 
 public:
 	AlphaTree() : maxSize(0), curSize(0), node(0), parentAry(0) {}
