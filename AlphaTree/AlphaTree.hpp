@@ -7,9 +7,6 @@
 #define NULL_LEVELROOT		0xffffffff
 #define ANODE_CANDIDATE		0xfffffffe
 
-#define dimg_idx_v(pidx) ((pidx)<<1)
-#define dimg_idx_h(pidx) ((pidx)<<1)+1
-
 #define LEFT_AVAIL(pidx,width)			(((pidx) % (width)) != 0)
 #define RIGHT_AVAIL(pidx,width)			(((pidx) % (width)) != ((width) - 1))
 #define UP_AVAIL(pidx,width)				((pidx) > ((width) - 1))
@@ -20,6 +17,9 @@
 #define B		-0.0608
 #define M		0.03
 #define SIZE_ADD	0.05
+
+class AlphaTree;
+typedef uint32 (AlphaTree::*idxConvFn)(uint32, uint8);
 
 typedef struct AlphaNode
 {
@@ -40,10 +40,11 @@ class AlphaTree
 	AlphaNode* node;
 	uint32* parentAry;
 	int neighbours[8];
+	idxConvFn img_2_dimg_idx;
 	double nrmsd;
 
 	void compute_dimg(uint8 * dimg, NeighbourList<4>& nlist, uint32 * dhist, Pixel * img);
-	void init_isVisited(uint8 *isVisited);
+	//void init_isVisited(uint8 *isVisited);
 	void Flood(Pixel* img);
 	inline void connectPix2Node(uint32* parentAry, uint32 pidx, Pixel pix_val, AlphaNode* pNode, uint32 iNode) const
 	{	
@@ -93,6 +94,22 @@ class AlphaTree
 	inline void visit(uint8* isVisited, uint32 p) const
 	{
 		isVisited[p >> 3] = isVisited[p >> 3] | (1 << (p & 7));
+	}
+
+
+	inline uint32 img_2_dimg_idx_4N(uint32 pidx, uint8 neighbour)
+	{
+		uint8 b0 = (uint8)(pidx & 1), b1 = (uint8)((pidx >> 1) & 1);
+
+		return ((pidx + b1 * neighbours[neighbour]) << 1) + (b0^b1);
+	}
+
+	inline uint32 img_2_dimg_idx_8N(uint32 pidx, uint8 neighbour)
+	{
+//		uint8 b0 = (uint8)(pidx & 1), b1 = (uint8)((pidx >> 1) & 1);
+
+	//	return ((pidx + b1 * neighbours[neighbour]) << 1) + (b0^b1);
+		return 0;
 	}
 	
 

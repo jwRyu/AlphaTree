@@ -12,7 +12,11 @@
 #include "HQueue.hpp"
 #include "NeighbourList.hpp"
 
+//#define dimg_idx_v(pidx) ((pidx)<<1)
+//#define dimg_idx_h(pidx) ((pidx)<<1)+1
+
 //#define img2iVidx(idx, width) (((idx)/(width)) + (width) + 3)
+
 
 void AlphaTree::AlphaFilter(Pixel* outimg, double lambda, uint32 area)
 {
@@ -208,6 +212,7 @@ void AlphaTree::init_isVisited(uint8 * isVisited)
 }
 */
 
+uint32(*img_2_dimg_idx)(uint32, uint8);
 void AlphaTree::Flood(Pixel* img)
 {
 	uint32 imgsize, dimgsize, nredges, max_level, current_level, next_level, x0, p, q, dissim;
@@ -284,20 +289,21 @@ void AlphaTree::Flood(Pixel* img)
 				continue;
 			}
 			*/
-			/*
+			
 			for (iNeighbour = 0; iNeighbour < connectivity; iNeighbour++)
 			{
 				q = p + neighbours[iNeighbour];
-				if (!is_visited(isVisited, img2iVidx(q, width)))
+				if (!is_visited(isVisited, q))
 				{
-					dissim = (uint32)dimg[dimg_idx_h(p - 1)];
+					dissim = (uint32)dimg[(this->*img_2_dimg_idx)(q, iNeighbour)];
 					hqueue_push(hqueue, p - 1, dissim);
 					if (levelroot[dissim] == NULL_LEVELROOT)
 						levelroot[dissim] = ANODE_CANDIDATE;
 				}
-			}
-			*/
+			} 
 			visit(isVisited, p);
+			
+			/*
 			if (LEFT_AVAIL(p, width) && !is_visited(isVisited, p - 1))
 			{
 				dissim = (uint32)dimg[dimg_idx_h(p - 1)];
@@ -326,6 +332,7 @@ void AlphaTree::Flood(Pixel* img)
 				if (levelroot[dissim] == NULL_LEVELROOT)
 					levelroot[dissim] = ANODE_CANDIDATE;
 			}
+			*/
 
 			if (current_level > hqueue->min_level)
 				current_level = hqueue->min_level;
@@ -376,11 +383,11 @@ void AlphaTree::BuildAlphaTree(Pixel *img, uint32 height, uint32 width, uint32 c
 	this->connectivity = connectivity;
 	if (connectivity == 4)
 	{
-		neighbours[0] = -(int)width;
+		neighbours[0] = (int)width;
 		neighbours[1] = +1;
 		neighbours[2] = -1;
-		neighbours[3] = width;
-
+		neighbours[3] = -width;
+		img_2_dimg_idx = &AlphaTree::img_2_dimg_idx_4N;
 	}
 	else if (connectivity == 8)
 	{
@@ -392,6 +399,7 @@ void AlphaTree::BuildAlphaTree(Pixel *img, uint32 height, uint32 width, uint32 c
 		neighbours[5] = width - 1;
 		neighbours[6] = width;
 		neighbours[7] = width + 1;
+		img_2_dimg_idx = &AlphaTree::img_2_dimg_idx_8N;
 	}
 
 	Flood(img);
