@@ -3,11 +3,13 @@
 #include "defines.h"
 #include "allocator.h"
 
+#define PADDED_VISIT_ARRAY	1
+
 #define NULL_LEVELROOT		0xffffffff
 #define ANODE_CANDIDATE		0xfffffffe
 
-#define dimg_idx_v(pidx) ((pidx)<<1)
-#define dimg_idx_h(pidx) ((pidx)<<1)+1
+//#define dimg_idx_v(pidx) ((pidx)<<1)
+//#define dimg_idx_h(pidx) ((pidx)<<1)+1
 
 #define LEFT_AVAIL(pidx,width)			(((pidx) % (width)) != 0)
 #define RIGHT_AVAIL(pidx,width)			(((pidx) % (width)) != ((width) - 1))
@@ -19,6 +21,9 @@
 #define B		-0.0608
 #define M		0.03
 #define SIZE_ADD	0.05
+
+class AlphaTree;
+typedef uint32 (AlphaTree::*idxConv)(uint32&, uint8&) const;
 
 typedef struct AlphaNode
 {
@@ -39,6 +44,7 @@ class AlphaTree
 	AlphaNode* node;
 	uint32* parentAry;
 	int neighbours[8];
+	idxConv imgidx_to_dimgidx;
 	double nrmsd;
 
 	void compute_dimg(uint8 * dimg, uint32 * dhist, Pixel * img);
@@ -82,6 +88,21 @@ class AlphaTree
 		pNew->area = 0;
 
 		return this->curSize++;
+	}
+
+	inline uint32 imgidx_to_dimgidx_4N(uint32& idx, uint8& neighbour) const
+	{
+		uint8 p0 = neighbour & 1;
+		uint8 p1 = (neighbour >> 1) & 1;
+		return ((idx - p1 - p1 * p0 * (width - 1)) << 1) + (p0^p1);
+	}
+
+	inline uint32 imgidx_to_dimgidx_8N(uint32& idx, uint8& neighbour) const
+	{
+//		uint8 p0 = neighbour & 1;
+//		uint8 p1 = (neighbour >> 1) & 1;
+//		return ((idx - p1 - p1 * p0 * (width - 1)) << 1) + (p0^p1);
+		return 0;
 	}
 
 	inline uint8 is_visited(uint8* isVisited, uint32 p) const

@@ -32,6 +32,8 @@ int main(int argc, char **argv)
 	ifstream fcheck;
 	uint32 contidx;
 	char in;
+	uint8 testimg[9] = {4, 4, 1, 4, 0, 0, 0, 2, 0};
+
 
 	contidx = 0;
 	//	f.open("C:/Users/jwryu/RUG/2018/AlphaTree/AlphaTree_grey_Exp.dat", std::ofstream::app);
@@ -91,6 +93,7 @@ int main(int argc, char **argv)
 			auto wcts = std::chrono::system_clock::now();
 
 			tree.BuildAlphaTree((Pixel*)cvimg.data, height, width, channel, 4);
+			//tree.BuildAlphaTree((Pixel*)testimg, 3, 3, 1, 4);
 
 			//outimg = new Pixel[width * height];
 
