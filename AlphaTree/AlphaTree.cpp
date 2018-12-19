@@ -225,9 +225,6 @@ void AlphaTree::Flood(Pixel* img)
 	uint32 *pParentAry;
 	uint8 iNeighbour;
 
-	//height = 60;
-	//width = 120;
-
 	imgsize = width * height;
 	nredges = width * (height - 1) + (width - 1) * height + (connectivity == 8) ? (width - 1) * (height - 1) * 2 : 0;
 	dimgsize = (connectivity >> 1) * width * height; //To make indexing easier
