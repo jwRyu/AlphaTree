@@ -11,7 +11,10 @@
 #include "allocator.h"
 #include "HQueue.hpp"
 
-#define img2iVidx(idx, width) ((idx) + (((idx)/(width))<<1) + (width) + 3)
+#define img2iVidx_32b(idx, width) (((idx >> 31) - 1) & ((idx) + (((idx)/(width))<<1) + (width) + 3))
+
+
+
 
 void AlphaTree::AlphaFilter(Pixel* outimg, double lambda, uint32 area)
 {
@@ -47,7 +50,6 @@ void AlphaTree::AlphaFilter(Pixel* outimg, double lambda, uint32 area)
 void AlphaTree::compute_dimg(uint8* dimg, uint32* dhist, Pixel* img)
 {
 	uint32 dimgidx, imgidx, i, j;
-	HQueue<neighidx> *hqueue;
 
 	if (connectivity == 4)
 	{
@@ -79,6 +81,7 @@ void AlphaTree::compute_dimg(uint8* dimg, uint32* dhist, Pixel* img)
 		}
 		img += width * height;
 
+		/*
 		hqueue_new(&hqueue, height * (width - 1) + (height - 1) * width, dhist, 256, 4);
 
 		imgidx = dimgidx = 0;
@@ -105,7 +108,7 @@ void AlphaTree::compute_dimg(uint8* dimg, uint32* dhist, Pixel* img)
 			imgidx++;
 		}
 		img += width * height;
-
+		*/
 
 	}
 	else if (connectivity == 8)
@@ -164,9 +167,7 @@ void AlphaTree::init_isVisited(uint8 * isVisited)
 	memset(isVisited, 0, ((width + 2)*(height + 2) + 7) >> 3);
 	//First row
 	for (i = 0; i < (width + 2) >> 6; i++)
-	{
 		p[i] = 0xffffffffffffffff;
-	}
 	for (i = (width + 2) & ~(0x3f); i < width + 2; i++)
 		visit(isVisited, i);
 
@@ -231,29 +232,29 @@ void AlphaTree::Flood(Pixel* img)
 	//Calc. dissim, Histogram
 	compute_dimg(dimg, dhist, img);
 	dhist[max_level]++; //make a room for the root
-	hqueue_new(&hqueue, nredges + 1, dhist, numlevels);
+	hqueue = new HQueue<uint32>(nredges + 1, dhist, numlevels);
 	
 	//tree size estimation (TSE)
 	nrmsd = 0;
 	for (p = 0; p < numlevels; p++)
 		nrmsd += ((double)dhist[p]) * ((double)dhist[p]);
 	nrmsd = sqrt((nrmsd - (double)nredges) / ((double)nredges * ((double)nredges - 1.0)));
-	this->maxSize = min(imgsize, (uint32)(imgsize * A * (exp(SIGMA * nrmsd) + B + M)));
-
+	maxSize = min(imgsize, (uint32)(imgsize * A * (exp(SIGMA * nrmsd) + B + M)));
+	maxSize = imgsize > 300*300? maxSize:imgsize;
 	Free(dhist);
 
 	//Allocate parent array and nodes
-	this->parentAry = (uint32*)Malloc((size_t)imgsize * sizeof(uint32));
-	this->node = (AlphaNode*)Malloc((size_t)this->maxSize * sizeof(AlphaNode));
+	parentAry = (uint32*)Malloc((size_t)imgsize * sizeof(uint32));
+	node = (AlphaNode*)Malloc((size_t)maxSize * sizeof(AlphaNode));
 	pParentAry = this->parentAry;
 
 	//put root node in levelroot
 	levelroot[max_level + 1] = NewAlphaNode((uint8)max_level);
-	this->node[levelroot[max_level + 1]].parentidx = levelroot[max_level + 1];
+	node[levelroot[max_level + 1]].parentidx = levelroot[max_level + 1];
 
 	current_level = max_level;
 	x0 = imgsize >> 1; // First pixel (anything between 0 ~ imgsize-1)
-	hqueue_push(hqueue, x0, current_level);
+	hqueue->hqueue_push(x0, current_level);
 
 	//	free(dhist);
 
@@ -262,13 +263,13 @@ void AlphaTree::Flood(Pixel* img)
 	{
 		while (hqueue->min_level <= current_level)
 		{
-			q = p = hqueue_pop(hqueue);
+			q = p = hqueue->hqueue_pop();
 #if PADDED_VISIT_ARRAY
-			q = img2iVidx(p, width);
+			q = img2iVidx_32b(p, width);
 #endif
 			if (is_visited(isVisited, q))
 			{
-				hqueue_find_min_level(hqueue);
+				hqueue->hqueue_find_min_level();
 				continue;
 			}
 			visit(isVisited, q);
@@ -277,12 +278,12 @@ void AlphaTree::Flood(Pixel* img)
 			for (iNeighbour = 0; iNeighbour < connectivity; iNeighbour++)
 			{
 				q = p + neighbours[iNeighbour];
-				r = img2iVidx(p, width) + neighbours[iNeighbour];
-				if (!is_visited(isVisited, r))
+				//r = img2iVidx(p, width) + neighbours[iNeighbour];
+				if (!is_visited(isVisited, img2iVidx_32b(q,width)))
 				{
 //					dissim = (uint32)dimg[(this->*imgidx_to_dimgidx)(p, iNeighbour)];
 					dissim = (uint8)(abs((int)img[p] - (int)img[q]));
-					hqueue_push(hqueue, q, dissim);
+					hqueue->hqueue_push(q, dissim);
 					if (levelroot[dissim] == NULL_LEVELROOT)
 						levelroot[dissim] = ANODE_CANDIDATE;
 				}
@@ -321,23 +322,23 @@ void AlphaTree::Flood(Pixel* img)
 			if (current_level > hqueue->min_level)
 				current_level = hqueue->min_level;
 			else
-				hqueue_find_min_level(hqueue);
+				hqueue->hqueue_find_min_level();
 
 			if (levelroot[current_level] == ANODE_CANDIDATE)
 				levelroot[current_level] = NewAlphaNode((uint8)current_level);
-			connectPix2Node(pParentAry, p, img[p], this->node + levelroot[current_level], levelroot[current_level]);
+			connectPix2Node(pParentAry, p, img[p], node + levelroot[current_level], levelroot[current_level]);
 
 		}
 		//		if(this->curSize > 22051838 && (this->curSize))
 			//		printf("curSize: %d\n",this->curSize);
 				//Redundant node removal
-		if (this->node[iChild].parentidx == levelroot[current_level] &&
-			this->node[levelroot[current_level]].area == this->node[iChild].area)
+		if (node[iChild].parentidx == levelroot[current_level] &&
+			node[levelroot[current_level]].area == node[iChild].area)
 		{
 			levelroot[current_level] = iChild;
-			this->curSize--;
+			curSize--;
 
-			memset((uint8*)(this->node + this->curSize), 0, sizeof(AlphaNode));
+			memset((uint8*)(node + curSize), 0, sizeof(AlphaNode));
 		}
 
 		next_level = current_level + 1;
@@ -345,14 +346,14 @@ void AlphaTree::Flood(Pixel* img)
 			next_level++;
 		if (levelroot[next_level] == ANODE_CANDIDATE)
 			levelroot[next_level] = NewAlphaNode((uint8)next_level);
-		connectNode2Node(this->node + levelroot[next_level], levelroot[next_level], this->node + levelroot[current_level]);
+		connectNode2Node(node + levelroot[next_level], levelroot[next_level], node + levelroot[current_level]);
 
 		iChild = levelroot[current_level];
 		levelroot[current_level] = NULL_LEVELROOT;
 		current_level = next_level;
 	}
 
-	hqueue_free(hqueue);
+	delete hqueue;
 	Free(dimg);
 	Free(levelroot);
 	Free(isVisited);

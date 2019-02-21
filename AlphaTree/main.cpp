@@ -18,7 +18,7 @@ using namespace cv;
 
 #define OUTPUT_FNAME "C:/Users/jwryu/RUG/2018/AlphaTree/AlphaTree.dat"
 #define OUTIMG_FNAME "C:/Users/jwryu/RUG/2018/AlphaTree/outimg.jpg"
-#define INPUTIMAGE_DIR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/OrientedAlphaTree_test"
+#define INPUTIMAGE_DIR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/Grey"
 
 #define REPEAT 1	//program repetition for accurate runtime measuring
 
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 	ifstream fcheck;
 	uint32 contidx;
 	char in;
-	uint8 testimg[9] = {4, 4, 1, 4, 0, 0, 0, 2, 0};
+	uint8 testimg[16] = {4,4,2,0,4,1,1,0,0,3,0,0,2,2,0,5};
 
 
 	contidx = 0;
@@ -76,12 +76,6 @@ int main(int argc, char **argv)
 
 		cout << cnt << ": " << str1 << ' ' << height << 'x' << width << endl;
 
-		if (channel != 1)
-		{
-			cout << "input should be a 1-ch image" << endl;
-			getc(stdin);
-			exit(-1);
-		}
 
 		//img = (Pixel*)malloc(height * width * sizeof(Pixel));
 		//imreshape((uint8*)img, cvimg.data, height, width);
@@ -92,8 +86,8 @@ int main(int argc, char **argv)
 			//memuse = max_memuse = 0;
 			auto wcts = std::chrono::system_clock::now();
 
-			tree.BuildAlphaTree((Pixel*)cvimg.data, height, width, channel, 4);
-			//tree.BuildAlphaTree((Pixel*)testimg, 3, 3, 1, 4);
+			//tree.BuildAlphaTree((Pixel*)cvimg.data, height, width, channel, 4);
+			tree.BuildAlphaTree((Pixel*)testimg, 4, 4, 1, 4);
 
 			//outimg = new Pixel[width * height];
 

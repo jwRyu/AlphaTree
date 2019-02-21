@@ -123,3 +123,12 @@ public:
 	void BuildAlphaTree(Pixel *img, uint32 height, uint32 width, uint32 channel, uint8 connectivity);
 	inline void clear() { Free(node); Free(parentAry); node = 0; parentAry = 0; }
 };
+
+template <typename T>
+inline T img2Vidx(T idx, uint32 width)
+{
+	(((idx)+(((idx) / (width)) << 1) + (width)+3))
+}
+
+#define img2iVidx_32b(idx, width) (((idx >> 31) - 1) & ((idx) + (((idx)/(width))<<1) + (width) + 3))
+

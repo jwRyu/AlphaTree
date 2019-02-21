@@ -1,7 +1,7 @@
 #include "defines.h"
 #include "HQueue.hpp"
 #include "allocator.h"
-
+/*
 void hqueue_new(HQueue<uint32>** hqueue, uint64 qsize, uint32 *dhist, uint32 dhistsize)
 {
 	uint32 i;
@@ -47,6 +47,7 @@ void hqueue_new(HQueue<neighidx>** hqueue, uint64 qsize, uint32 *dhist, uint32 d
 	(*hqueue)->bottom[dhistsize] = 0;
 	(*hqueue)->cur[dhistsize] = 1;
 }
+*/
 
 /*
 HQueue* hqueue_new(uint64 qsize, uint32 *dhist, uint32 dhistsize)

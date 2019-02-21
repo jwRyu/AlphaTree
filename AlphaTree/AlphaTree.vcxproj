@@ -127,12 +127,14 @@
     <ClInclude Include="AlphaTree.hpp" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="HQueue.hpp" />
+    <ClInclude Include="Trie.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="allocator.cpp" />
     <ClCompile Include="AlphaTree.cpp" />
     <ClCompile Include="HQueue.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Trie.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
