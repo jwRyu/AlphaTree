@@ -37,18 +37,18 @@ typedef struct AlphaNode
 
 class AlphaTree
 {
-	uint32 maxSize;
-	uint32 curSize;
-	uint32 height, width, channel;
+	int64 maxSize;
+	int64 curSize;
+	int64 height, width, channel;
 	uint8 connectivity;
 	AlphaNode* node;
-	uint32* parentAry;
-	int neighbours[8];
+	uint32* parentAry; //replace later
+	int64 neighbours[8];
 	idxConv imgidx_to_dimgidx;
 	double nrmsd;
 
 	void compute_dimg(uint8 * dimg, uint32 * dhist, Pixel * img);
-	void init_isVisited(uint8 *isVisited);
+	void init_isVisited(uint8 *isVisited, size_t arrsize);
 	void Flood(Pixel* img);
 	inline void connectPix2Node(uint32* parentAry, uint32 pidx, Pixel pix_val, AlphaNode* pNode, uint32 iNode) const
 	{	
@@ -94,7 +94,14 @@ class AlphaTree
 	{
 		uint8 p0 = neighbour & 1;
 		uint8 p1 = (neighbour >> 1) & 1;
-		return ((idx - p1 - p1 * p0 * (width - 1)) << 1) + (p0^p1);
+		return ((idx - (uint32)p1 - (uint32)p1 * (uint32)p0 * ((uint32)width - 1)) << 1) + ((uint32)p0 ^ (uint32)p1);
+	}
+	
+	inline int64 imgidx_to_dimgidx_4N(int64& idx, uint8& neighbour) const
+	{
+		uint8 p0 = neighbour & 1;
+		uint8 p1 = (neighbour >> 1) & 1;
+		return ((idx - (int64)p1 - (int64)p1 * (int64)p0 * ((int64)width - 1)) << 1) + ((int64)p0^(int64)p1);
 	}
 
 	inline uint32 imgidx_to_dimgidx_8N(uint32& idx, uint8& neighbour) const
@@ -109,8 +116,18 @@ class AlphaTree
 	{
 		return (isVisited[p >> 3] >> (p & 7)) & 1;
 	}
+	
+	inline uint8 is_visited(uint8* isVisited, int64 p) const
+	{
+		return (isVisited[p >> 3] >> (p & 7)) & 1;
+	}
 
 	inline void visit(uint8* isVisited, uint32 p) const
+	{
+		isVisited[p >> 3] = isVisited[p >> 3] | (1 << (p & 7));
+	}
+
+	inline void visit(uint8* isVisited, int64 p) const
 	{
 		isVisited[p >> 3] = isVisited[p >> 3] | (1 << (p & 7));
 	}
@@ -123,12 +140,10 @@ public:
 	void BuildAlphaTree(Pixel *img, uint32 height, uint32 width, uint32 channel, uint8 connectivity);
 	inline void clear() { Free(node); Free(parentAry); node = 0; parentAry = 0; }
 };
-
+  
 template <typename T>
-inline T img2Vidx(T idx, uint32 width)
+inline T img2Vidx(T idx, int64 width)
 {
-	(((idx)+(((idx) / (width)) << 1) + (width)+3))
+	return (T)((int64)idx + (int64)idx / width + width + 2);
 }
-
-#define img2iVidx_32b(idx, width) (((idx >> 31) - 1) & ((idx) + (((idx)/(width))<<1) + (width) + 3))
 

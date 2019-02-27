@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 	ifstream fcheck;
 	uint32 contidx;
 	char in;
-	uint8 testimg[16] = {4,4,2,0,4,1,1,0,0,3,0,0,2,2,0,5};
+	uint8 testimg[160 * 3] = { 1, };// {4, 4, 2, 0, 4, 1, 1, 0, 0, 3, 0, 0, 2, 2, 0, 5};
 
 
 	contidx = 0;
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 			auto wcts = std::chrono::system_clock::now();
 
 			//tree.BuildAlphaTree((Pixel*)cvimg.data, height, width, channel, 4);
-			tree.BuildAlphaTree((Pixel*)testimg, 4, 4, 1, 4);
+			tree.BuildAlphaTree((Pixel*)testimg, 3, 160, 1, 4);
 
 			//outimg = new Pixel[width * height];
 

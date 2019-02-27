@@ -158,47 +158,49 @@ void AlphaTree::compute_dimg(uint8* dimg, uint32* dhist, Pixel* img)
 	}
 }
 
-void AlphaTree::init_isVisited(uint8 * isVisited)
+void AlphaTree::init_isVisited(uint8 * isVisited, size_t arrsize)
 {
-	uint64 *p = (uint64*)isVisited;
-	uint32 i, j;
+	uint64 *p;
+	int64 i, j;
 
+	memset(isVisited, 0, arrsize);
 #if PADDED_VISIT_ARRAY
-	memset(isVisited, 0, ((width + 2)*(height + 2) + 7) >> 3);
-	//First row
+//	isVisited[0] = 0xff;
+//	p = (uint64*)(isVisited + 1);
+//First row
+	
+	p = (uint64*)(isVisited);
 	for (i = 0; i < (width + 2) >> 6; i++)
 		p[i] = 0xffffffffffffffff;
-	for (i = (width + 2) & ~(0x3f); i < width + 2; i++)
+	for (i = (((width + 2) >> 6) << 6); i < width + 2; i++)
 		visit(isVisited, i);
 
 	//Middle rows
-	j = width + 2;
+	j = ((width + 1) << 1);
 	for (i = 0; i < height; i++)
 	{
 		visit(isVisited, j);
-		visit(isVisited, j + width + 1);
-		j += width + 2;
+		j += width + 1;
 	}
 
 	//Last row
-	i = (width + 2) * (height + 1);
+	i = (width + 1) * (height + 1) + 1;
 	while (i & 0x3f)
 		visit(isVisited, i++);
-	for (; i < ((int64)width + 2) * ((int64)height + 2) - 64; i++)
+	for (; i < (width + 1) * (height + 2) + 1 - 64;)
 	{
 		*(uint64*)(&isVisited[i>>3]) = 0xffffffffffffffff;
 		i += 64;
 	}
-	for (; i < (width + 2)*(height + 2); i++)
+	for (; i < (width + 1)*(height + 2) + 1;)
 		visit(isVisited, i++);
-#else
-	memset(isVisited, 0, ((width)*(height) + 7) >> 3);
 #endif
 }
 
 void AlphaTree::Flood(Pixel* img)
 {
-	uint32 imgsize, dimgsize, nredges, max_level, current_level, next_level, x0, p, q, r, dissim;
+	uint32 imgsize, dimgsize, nredges, max_level, current_level, next_level, x0, dissim;
+	int64 p, q, r;
 	uint32 numlevels;
 	HQueue<uint32>* hqueue;
 	uint32 *dhist;
@@ -207,6 +209,7 @@ void AlphaTree::Flood(Pixel* img)
 	uint8 *isVisited;
 	uint32 *pParentAry;
 	uint8 iNeighbour;
+	size_t isV_arrsize;
 	
 	imgsize = width * height;
 	nredges = width * (height - 1) + (width - 1) * height + (connectivity == 8) ? (width - 1) * (height - 1) * 2 : 0;
@@ -218,14 +221,16 @@ void AlphaTree::Flood(Pixel* img)
 	dimg = (uint8*)Malloc((size_t)dimgsize * sizeof(uint8));
 	levelroot = (uint32*)Malloc((uint32)(numlevels + 1) * sizeof(uint32));
 #if PADDED_VISIT_ARRAY
-	isVisited = (uint8*)Malloc((size_t)((width + 2) * (height + 2) + 7) >> 3);
+	isV_arrsize = ((width + 1) * (height + 2) + 1 + 7) >> 3;
 #else
-	isVisited = (uint8*)Malloc((size_t)((width) * (height) + 7) >> 3);
+	isV_arrsize = ((width) * (height) + 7) >> 3;
 #endif
+	isVisited = (uint8*)Malloc(isV_arrsize);
+
 	for (p = 0; p < numlevels; p++)
 		levelroot[p] = NULL_LEVELROOT;
 	memset(dhist, 0, (size_t)numlevels * sizeof(uint32));
-	init_isVisited(isVisited);
+	init_isVisited(isVisited, isV_arrsize);
 	
 	max_level = (uint8)(numlevels - 1);
 
@@ -240,7 +245,7 @@ void AlphaTree::Flood(Pixel* img)
 		nrmsd += ((double)dhist[p]) * ((double)dhist[p]);
 	nrmsd = sqrt((nrmsd - (double)nredges) / ((double)nredges * ((double)nredges - 1.0)));
 	maxSize = min(imgsize, (uint32)(imgsize * A * (exp(SIGMA * nrmsd) + B + M)));
-	maxSize = imgsize > 300*300? maxSize:imgsize;
+	maxSize = imgsize > 500*500? maxSize:imgsize;
 	Free(dhist);
 
 	//Allocate parent array and nodes
@@ -265,7 +270,7 @@ void AlphaTree::Flood(Pixel* img)
 		{
 			q = p = hqueue->hqueue_pop();
 #if PADDED_VISIT_ARRAY
-			q = img2iVidx_32b(p, width);
+			q = img2Vidx(p, width);
 #endif
 			if (is_visited(isVisited, q))
 			{
@@ -278,8 +283,7 @@ void AlphaTree::Flood(Pixel* img)
 			for (iNeighbour = 0; iNeighbour < connectivity; iNeighbour++)
 			{
 				q = p + neighbours[iNeighbour];
-				//r = img2iVidx(p, width) + neighbours[iNeighbour];
-				if (!is_visited(isVisited, img2iVidx_32b(q,width)))
+				if (!is_visited(isVisited, img2Vidx(q,width)))
 				{
 //					dissim = (uint32)dimg[(this->*imgidx_to_dimgidx)(p, iNeighbour)];
 					dissim = (uint8)(abs((int)img[p] - (int)img[q]));
@@ -368,10 +372,10 @@ void AlphaTree::BuildAlphaTree(Pixel *img, uint32 height, uint32 width, uint32 c
 	this->connectivity = connectivity;
 	if (connectivity == 4)
 	{
-		neighbours[0] = +(int)width;
+		neighbours[0] = +(int)(width + PADDED_VISIT_ARRAY);
 		neighbours[1] = +1;
 		neighbours[2] = -1;
-		neighbours[3] = -(int)width;
+		neighbours[3] = -(int)(width + PADDED_VISIT_ARRAY);
 		imgidx_to_dimgidx = &AlphaTree::imgidx_to_dimgidx_4N;
 	}
 	else if (connectivity == 8)
