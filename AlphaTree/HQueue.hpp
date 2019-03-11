@@ -3,31 +3,31 @@
 #include "defines.h"
 #include "allocator.h"
 
-template <typename T>
+template <class Tindex>
 class HQueue
 {
-	T *queue;
-	T *bottom, *cur;
+	Tindex *queue;
+	Tindex *bottom, *cur;
 public:
 	uint64 qsize;
-	T min_level, max_level;
-	HQueue(uint64 qsize, T *dhist, uint32 dhistsize)
+	Tindex min_level;
+	HQueue(uint64 qsize, Tindex *dhist)
 	{
-		queue = (T*)Malloc((size_t)qsize * sizeof(T));
-		bottom = (T*)Malloc((size_t)(dhistsize + 1) * sizeof(T));
-		cur = (T*)Malloc((size_t)(dhistsize + 1) * sizeof(T));
+		queue = (Tindex*)Malloc((size_t)qsize * sizeof(Tindex));
+		bottom = (Tindex*)Malloc((size_t)(257) * sizeof(Tindex));
+		cur = (Tindex*)Malloc((size_t)(257) * sizeof(Tindex));
 
 		qsize = qsize;
-		min_level = max_level = dhistsize;
+		min_level = 256;
 
-		T sum_hist = 0;
-		for (uint32 i = 0; i < dhistsize; i++)
+		Tindex sum_hist = 0;
+		for (int32 i = 0; i < 256; i++)
 		{
 			bottom[i] = cur[i] = sum_hist;
 			sum_hist += dhist[i];
 		}
-		bottom[dhistsize] = 0;
-		cur[dhistsize] = 1;
+		bottom[256] = 0;
+		cur[256] = 1;
 	}
 	~HQueue()
 	{
@@ -36,7 +36,7 @@ public:
 		Free(cur);
 	}
 
-	inline void hqueue_push(T pidx, T level)
+	inline void hqueue_push(Tindex pidx, uint8 level)
 	{
 		min_level = min(level, min_level);
 #if DEBUG
@@ -46,7 +46,7 @@ public:
 		queue[cur[level]++] = pidx;
 	}
 
-	inline T hqueue_pop()
+	inline Tindex hqueue_pop()
 	{
 		return queue[--cur[min_level]];
 	}
