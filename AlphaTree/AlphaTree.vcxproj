@@ -129,7 +129,7 @@
     <ClInclude Include="AlphaTree.hpp" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="HQueue.hpp" />
-    <ClInclude Include="Trie.h" />
+    <ClInclude Include="Trie.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="allocator.cpp" />

@@ -16,6 +16,7 @@
 #include "AlphaTree.hpp"
 #include "HQueue.hpp"
 #include "allocator.h"
+#include "Trie.hpp"
 using namespace std;
 
 #define OUTPUT_FNAME "C:/Users/jwryu/RUG/2018/AlphaTree/test.dat"

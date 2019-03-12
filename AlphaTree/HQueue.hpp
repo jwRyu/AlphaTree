@@ -3,24 +3,24 @@
 #include "defines.h"
 #include "allocator.h"
 
-template <class Tindex>
+template <class Imgidx>
 class HQueue
 {
-	Tindex *queue;
-	Tindex *bottom, *cur;
+	Imgidx *queue;
+	Imgidx *bottom, *cur;
 public:
 	uint64 qsize;
-	Tindex min_level;
-	HQueue(uint64 qsize, Tindex *dhist)
+	uint8 min_level;
+	HQueue(uint64 qsize, Imgidx *dhist)
 	{
-		queue = (Tindex*)Malloc((size_t)qsize * sizeof(Tindex));
-		bottom = (Tindex*)Malloc((size_t)(257) * sizeof(Tindex));
-		cur = (Tindex*)Malloc((size_t)(257) * sizeof(Tindex));
+		queue = (Imgidx*)Malloc((size_t)qsize * sizeof(Imgidx));
+		bottom = (Imgidx*)Malloc((size_t)(257) * sizeof(Imgidx));
+		cur = (Imgidx*)Malloc((size_t)(257) * sizeof(Imgidx));
 
 		qsize = qsize;
-		min_level = 256;
+		min_level = 255;
 
-		Tindex sum_hist = 0;
+		Imgidx sum_hist = 0;
 		for (int32 i = 0; i < 256; i++)
 		{
 			bottom[i] = cur[i] = sum_hist;
@@ -36,7 +36,7 @@ public:
 		Free(cur);
 	}
 
-	inline void hqueue_push(Tindex pidx, uint8 level)
+	inline void push(Imgidx pidx, uint8 level)
 	{
 		min_level = min(level, min_level);
 #if DEBUG
@@ -46,12 +46,12 @@ public:
 		queue[cur[level]++] = pidx;
 	}
 
-	inline Tindex hqueue_pop()
+	inline Imgidx pop()
 	{
 		return queue[--cur[min_level]];
 	}
 
-	inline void hqueue_find_min_level()
+	inline void find_min_level()
 	{
 		while (bottom[min_level] == cur[min_level])
 			min_level++;

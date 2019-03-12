@@ -8,5 +8,6 @@ typedef unsigned short uint16;
 typedef unsigned long long uint64;
 typedef long long int64;
 typedef long int32;
+typedef char int8;
 
 typedef uint8 Pixel;
