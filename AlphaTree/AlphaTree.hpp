@@ -3,6 +3,7 @@
 #include "defines.h"
 #include "allocator.h"
 #include "HQueue.hpp"
+#include "Trie.hpp"
 
 
 #define DELAYED_NODE_ALLOC		0
@@ -56,6 +57,166 @@ struct AlphaNode
 template<class Imgidx, class Pixel>
 class AlphaTree
 {
+	inline Pixel abs_diff(Pixel p, Pixel q)
+	{
+		if (p > q)
+			return p - q;
+		else
+			return q - p;
+	}
+	void compute_dimg(Pixel* dimg, Imgidx* dhist, Pixel* img)
+	{
+		Imgidx dimgidx, imgidx, i, j;
+		
+		imgidx = dimgidx = 0;
+		if (sizeof(Pixel) < 8)
+		{
+			if (connectivity == 4)
+			{
+				for (i = 0; i < height - 1; i++)
+				{
+					for (j = 0; j < width - 1; j++)
+					{						
+						dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + width] - (int64)img[imgidx]));
+						dhist[dimg[dimgidx++]]++;
+						dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + 1] - (int64)img[imgidx]));
+						dhist[dimg[dimgidx++]]++;
+						imgidx++;
+					}
+					dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + width] - (int64)img[imgidx]));
+					dhist[dimg[dimgidx++]]++;
+					dimgidx++;
+					imgidx++;
+				}
+				for (j = 0; j < width - 1; j++)
+				{
+					dimgidx++;
+					dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + 1] - (int64)img[imgidx]));
+					dhist[dimg[dimgidx++]]++;
+					imgidx++;
+				}
+			}
+			else if (connectivity == 8)
+			{
+				//   -  -  -
+				//   -  p  3
+				//   0  1  2
+				//top,middle
+				for (i = 0; i < height - 1; i++)
+				{
+					dimgidx++; //skip 0
+					dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + width] - (int64)img[imgidx]));//1
+					dhist[dimg[dimgidx++]]++;
+					dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + width + 1] - (int64)img[imgidx]));//2
+					dhist[dimg[dimgidx++]]++;
+					dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + 1] - (int64)img[imgidx]));//3
+					dhist[dimg[dimgidx++]]++;
+					imgidx++;
+					for (j = 1; j < width - 1; j++)
+					{
+						dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + width - 1] - (int64)img[imgidx]));//0
+						dhist[dimg[dimgidx++]]++;
+						dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + width] - (int64)img[imgidx]));//1
+						dhist[dimg[dimgidx++]]++;
+						dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + width + 1] - (int64)img[imgidx]));//2
+						dhist[dimg[dimgidx++]]++;
+						dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + 1] - (int64)img[imgidx]));//3
+						dhist[dimg[dimgidx++]]++;
+						imgidx++;
+					}
+					dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + width - 1] - (int64)img[imgidx]));//0
+					dhist[dimg[dimgidx++]]++;
+					dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + width] - (int64)img[imgidx]));//1
+					dhist[dimg[dimgidx]]++;
+					dimgidx += 3;//skip 2,3
+					imgidx++;
+				}
+
+				//bottom
+				for (j = 0; j < width - 1; j++)
+				{
+					dimgidx += 3; //skip 0,1,2
+					dimg[dimgidx] = (Pixel)(abs((int64)img[imgidx + 1] - (int64)img[imgidx]));//3
+					dhist[dimg[dimgidx++]]++;
+					imgidx++;
+				}
+			}
+		}
+		else
+		{
+			if (connectivity == 4)
+			{
+				for (i = 0; i < height - 1; i++)
+				{
+					for (j = 0; j < width - 1; j++)
+					{
+						dimg[dimgidx] = abs_diff(img[imgidx + width], img[imgidx]);
+						dhist[dimg[dimgidx++]]++;
+						dimg[dimgidx] = abs_diff(img[imgidx + 1], img[imgidx]);
+						dhist[dimg[dimgidx++]]++;
+						imgidx++;
+					}
+					dimg[dimgidx] = abs_diff(img[imgidx + width], img[imgidx]);
+					dhist[dimg[dimgidx++]]++;
+					dimgidx++;
+					imgidx++;
+				}
+				for (j = 0; j < width - 1; j++)
+				{
+					dimgidx++;
+					dimg[dimgidx] = abs_diff(img[imgidx + width], img[imgidx]);
+					dhist[dimg[dimgidx++]]++;
+					imgidx++;
+				}
+			}
+			else if (connectivity == 8)
+			{
+				//   -  -  -
+				//   -  p  3
+				//   0  1  2
+				//top,middle
+				for (i = 0; i < height - 1; i++)
+				{
+					dimgidx++; //skip 0
+					dimg[dimgidx] = abs_diff(img[imgidx + width], img[imgidx]); 
+					dhist[dimg[dimgidx++]]++;
+					dimg[dimgidx] = abs_diff(img[imgidx + width + 1], img[imgidx]);  
+					dhist[dimg[dimgidx++]]++;
+					dimg[dimgidx] = abs_diff(img[imgidx + 1], img[imgidx]);
+					dhist[dimg[dimgidx++]]++;
+					imgidx++;
+					for (j = 1; j < width - 1; j++)
+					{
+						dimg[dimgidx] = abs_diff(img[imgidx + width - 1], img[imgidx]); 
+						dhist[dimg[dimgidx++]]++;
+						dimg[dimgidx] = abs_diff(img[imgidx + width], img[imgidx]); 
+						dhist[dimg[dimgidx++]]++;
+						dimg[dimgidx] = abs_diff(img[imgidx + width + 1], img[imgidx]);
+						dhist[dimg[dimgidx++]]++;
+						dimg[dimgidx] = abs_diff(img[imgidx + 1], img[imgidx]);
+						dhist[dimg[dimgidx++]]++;
+						imgidx++;
+					}
+					dimg[dimgidx] = abs_diff(img[imgidx + width - 1], img[imgidx]);
+					dhist[dimg[dimgidx++]]++;
+					dimg[dimgidx] = abs_diff(img[imgidx + width], img[imgidx]);
+					dhist[dimg[dimgidx]]++;
+					dimgidx += 3;//skip 2,3
+					imgidx++;
+				}
+
+				//bottom
+				for (j = 0; j < width - 1; j++)
+				{
+					dimgidx += 3; //skip 0,1,2
+					dimg[dimgidx] = abs_diff(img[imgidx + 1], img[imgidx]);
+					dhist[dimg[dimgidx++]]++;
+					imgidx++;
+				}
+			}
+		}
+
+	}
 	void init_isAvailable(uint8* isAvailable)
 	{
 		int32 i, j, k;
@@ -117,82 +278,6 @@ class AlphaTree
 				isAvailable[k] = 227;
 				j += width;
 				k += width;
-			}
-		}
-	}
-	void compute_dimg(Pixel* dimg, Imgidx* dhist, Pixel* img)
-	{
-		Imgidx dimgidx, imgidx, i, j;
-
-		imgidx = dimgidx = 0;
-		if (connectivity == 4)
-		{
-			for (i = 0; i < height - 1; i++)
-			{
-				for (j = 0; j < width - 1; j++)
-				{
-					dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + width] - (int)img[imgidx]));
-					dhist[dimg[dimgidx++]]++;
-					dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + 1] - (int)img[imgidx]));
-					dhist[dimg[dimgidx++]]++;
-					imgidx++;
-				}
-				dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + width] - (int)img[imgidx]));
-				dhist[dimg[dimgidx++]]++;
-				dimgidx++;
-				imgidx++;
-			}
-			for (j = 0; j < width - 1; j++)
-			{
-				dimgidx++;
-				dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + 1] - (int)img[imgidx]));
-				dhist[dimg[dimgidx++]]++;
-				imgidx++;
-			}
-		}
-		else if (connectivity == 8)
-		{
-			//   -  -  -
-			//   -  p  3
-			//   0  1  2
-			//top,middle
-			for (i = 0; i < height - 1; i++)
-			{
-				dimgidx++; //skip 0
-				dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + width] - (int)img[imgidx]));//1
-				dhist[dimg[dimgidx++]]++;
-				dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + width + 1] - (int)img[imgidx]));//2
-				dhist[dimg[dimgidx++]]++;
-				dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + 1] - (int)img[imgidx]));//3
-				dhist[dimg[dimgidx++]]++;
-				imgidx++;
-				for (j = 1; j < width - 1; j++)
-				{
-					dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + width - 1] - (int)img[imgidx]));//0
-					dhist[dimg[dimgidx++]]++;
-					dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + width] - (int)img[imgidx]));//1
-					dhist[dimg[dimgidx++]]++;
-					dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + width + 1] - (int)img[imgidx]));//2
-					dhist[dimg[dimgidx++]]++;
-					dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + 1] - (int)img[imgidx]));//3
-					dhist[dimg[dimgidx++]]++;
-					imgidx++;
-				}
-				dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + width - 1] - (int)img[imgidx]));//0
-				dhist[dimg[dimgidx++]]++;
-				dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + width] - (int)img[imgidx]));//1
-				dhist[dimg[dimgidx]]++;
-				dimgidx += 3;//skip 2,3
-				imgidx++;
-			}
-
-			//bottom
-			for (j = 0; j < width - 1; j++)
-			{
-				dimgidx += 3; //skip 0,1,2
-				dimg[dimgidx] = (Pixel)(abs((int)img[imgidx + 1] - (int)img[imgidx]));//3
-				dhist[dimg[dimgidx++]]++;
-				imgidx++;
 			}
 		}
 	}
@@ -267,7 +352,7 @@ class AlphaTree
 	{
 		isVisited[p >> 3] = isVisited[p >> 3] | (1 << (p & 7));
 	}
-	void Flood(Pixel* img)
+	void Flood_LDR(Pixel* img)
 	{
 		Imgidx imgsize, dimgsize, nredges, x0;
 		Pixel current_level, next_level;
@@ -279,14 +364,14 @@ class AlphaTree
 		uint8 *isVisited, *isAvailable, isAv;
 		Imgidx *pParentAry;
 		Imgidx p, q, wstride_d = width << 2, wstride0 = width + 1, wstride1 = width - 1;
-		
+
 		imgsize = width * height;
 		nredges = width * (height - 1) + (width - 1) * height + ((connectivity == 8) ? ((width - 1) * (height - 1) * 2) : 0);
 		dimgsize = (connectivity >> 1) * width * height;
 		numlevels = 1 << (8 * sizeof(uint8));
 
 		dhist = (Imgidx*)Malloc((size_t)numlevels * sizeof(Imgidx));
-		dimg = (uint8*)Malloc((size_t)dimgsize * sizeof(uint8));
+		dimg = (Pixel*)Malloc((size_t)dimgsize * sizeof(Pixel));
 		levelroot = (Imgidx*)Malloc((Imgidx)(numlevels + 1) * sizeof(Imgidx));
 		isVisited = (uint8*)Malloc((size_t)((imgsize + 7) >> 3));
 		if (connectivity == 4)
@@ -313,7 +398,7 @@ class AlphaTree
 		Free(dhist);
 
 		parentAry = (Imgidx*)Malloc((size_t)imgsize * sizeof(Imgidx));
-		node = (AlphaNode<int32, uint8>*)Malloc((size_t)maxSize * sizeof(AlphaNode<int32, uint8>));
+		node = (AlphaNode<Imgidx, Pixel>*)Malloc((size_t)maxSize * sizeof(AlphaNode<Imgidx, Pixel>));
 		pParentAry = parentAry;
 
 		levelroot[255] = NewAlphaNode(255);
@@ -343,7 +428,7 @@ class AlphaTree
 				{
 					isAv = get_field(isAvailable, p);
 					q = p << 1;
-					
+
 					if (is_available(isAv, 0) && !is_visited(isVisited, p + width))
 						push_neighbour(hqueue, levelroot, dimg, p + width, q);
 					if (is_available(isAv, 1) && !is_visited(isVisited, p + 1))
@@ -352,7 +437,7 @@ class AlphaTree
 						push_neighbour(hqueue, levelroot, dimg, p - 1, q - 1);
 					if (is_available(isAv, 3) && !is_visited(isVisited, p - width))
 						push_neighbour(hqueue, levelroot, dimg, p - width, q - (width << 1));
-						
+
 				}
 				else
 				{
@@ -452,8 +537,10 @@ public:
 		if (connectivity != 4 && connectivity != 8)
 		{
 			std::cout << "connectivity should be 4 or 8\n" << std::endl;
+			return;
 		}
-		else
-			Flood(img);
+
+
+		Flood_LDR(img);
 	}
 };

@@ -25,6 +25,8 @@ using namespace std;
 #define INPUTIMAGE_DIR_COLOUR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/Colour" //colour images are used after rgb2grey conversion
 #define REPEAT 20
 #define RUN_TSE_ONLY 0
+#define BIT_DEPTH_EXT_64 0
+
 
 #define DEBUG 0
 
@@ -57,10 +59,33 @@ void DeleteAlphaTree(AlphaTree* tree)
 	Free(tree);
 }*/
 
+void img_bitdepth_ext_rand(uint8 *in, uint64 *out, int32 width, int32 height, int32 channel)
+{
+	int64 i, imgsize;
+	uint64 pix, shamt, mask;
+
+	srand(time(NULL));
+
+	mask = 0xff;
+	imgsize = (int64)width * (int64)height;
+	for (i = 0; i < imgsize; i++)
+	{
+		pix = ((uint64)in[i]) << 56;
+		for (shamt = 48; shamt != 0; shamt -= 8)
+			pix = pix | ((rand() & mask) << shamt);
+		pix = pix | ((rand() & mask));
+		out[i] = pix;
+	}
+}
+
 int main(int argc, char **argv)
 {
+#if BIT_DEPTH_EXT_64
+	AlphaTree<int32, uint64> *tree;
+#else
 	AlphaTree<int32, uint8> *tree;
-	int32 width, height, channel;
+#endif
+		int32 width, height, channel;
 	int32 cnt = 0;
 	ofstream f;
 	ifstream fcheck;
@@ -70,7 +95,7 @@ int main(int argc, char **argv)
 	double time_elapsed = 0;
 	double pixels_processed = 0;
 //	uint8 testimg[4*4] = {4, 4, 2, 0, 4, 1, 1, 0, 0, 3, 0, 0, 2, 2, 0, 5};
-
+	
 	contidx = 0;
 	//	f.open("C:/Users/jwryu/RUG/2018/AlphaTree/AlphaTree_grey_Exp.dat", std::ofstream::app);
 	fcheck.open(OUTPUT_FNAME);
@@ -132,6 +157,11 @@ int main(int argc, char **argv)
 			height = cvimg.rows;
 			width = cvimg.cols;
 			channel = cvimg.channels();
+#if BIT_DEPTH_EXT_64
+			uint64 *img64;
+			img64 = new uint64[width * height * channel];
+			img_bitdepth_ext_rand(cvimg.data, img64, width, height, channel);
+#endif
 
 			cout << cnt << ": " << str1 << ' ' << height << 'x' << width << endl;
 
@@ -148,9 +178,14 @@ int main(int argc, char **argv)
 				memuse = max_memuse = 0;
 				auto wcts = std::chrono::system_clock::now();
 
-				tree = (AlphaTree<int32, uint8>*)Malloc(sizeof(AlphaTree<int32, uint8>));
 				//		start = clock();
+#if BIT_DEPTH_EXT_64
+				tree = (AlphaTree<int32, uint64>*)Malloc(sizeof(AlphaTree<uint64, uint8>));
+				tree->BuildAlphaTree(img64, height, width, channel, 4);
+#else
+				tree = (AlphaTree<int32, uint8>*)Malloc(sizeof(AlphaTree<int32, uint8>));
 				tree->BuildAlphaTree(cvimg.data, height, width, channel, 4);
+#endif
 				//tree->BuildAlphaTree(testimg, 4, 4, channel, 8);
 				std::chrono::duration<double> wctduration = (std::chrono::system_clock::now() - wcts);
 				runtime = wctduration.count();
@@ -167,6 +202,9 @@ int main(int argc, char **argv)
 			cvimg.release();
 			str1.clear();
 			tree->clear();
+#if BIT_DEPTH_EXT_64
+			delete[] img64;
+#endif
 			//return 0;
 		}
 	}
