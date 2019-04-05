@@ -23,7 +23,7 @@ using namespace std;
 
 #define INPUTIMAGE_DIR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/Grey"
 #define INPUTIMAGE_DIR_COLOUR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/Colour" //colour images are used after rgb2grey conversion
-#define REPEAT 20
+#define REPEAT 10
 #define RUN_TSE_ONLY 0
 
 #define DEBUG 0
@@ -48,6 +48,37 @@ uint8 isChanged(void *src)
 }
 #endif
 
+void RandomizedHDRimage(uint64* hdrimg, uint8* ldrimg, int64 imgsize)
+{
+	uint64 pix;
+
+	for (int64 i = 0; i < imgsize; i++)
+	{
+		pix = ((uint64)ldrimg[i]) << 56;
+		pix |= ((uint64)(rand() & 0xff) << 48);
+		pix |= ((uint64)(rand() & 0xff) << 40);
+		pix |= ((uint64)(rand() & 0xff) << 32);
+		pix |= ((uint64)(rand() & 0xff) << 24);
+		pix |= ((uint64)(rand() & 0xff) << 16);
+		pix |= ((uint64)(rand() & 0xff) << 8);
+		pix |= ((uint64)(rand() & 0xff));
+		hdrimg[i] = pix;
+	}
+}
+
+void RandomizedHDRimage(uint32* hdrimg, uint8* ldrimg, int64 imgsize)
+{
+	uint32 pix;
+
+	for (int64 i = 0; i < imgsize; i++)
+	{
+		pix = ((uint64)ldrimg[i]) << 24;
+		pix |= ((uint64)(rand() & 0xff) << 16);
+		pix |= ((uint64)(rand() & 0xff) << 8);
+		pix |= ((uint64)(rand() & 0xff));
+		hdrimg[i] = pix;
+	}
+}
 
 /*
 void DeleteAlphaTree(AlphaTree* tree)
@@ -60,6 +91,7 @@ void DeleteAlphaTree(AlphaTree* tree)
 int main(int argc, char **argv)
 {
 	AlphaTree<int32, uint8> *tree;
+	AlphaTree<int32, uint64> *hdrtree;
 	int32 width, height, channel;
 	int32 cnt = 0;
 	ofstream f;
@@ -69,8 +101,9 @@ int main(int argc, char **argv)
 	std::string path;
 	double time_elapsed = 0;
 	double pixels_processed = 0;
-//	uint8 testimg[4*4] = {4, 4, 2, 0, 4, 1, 1, 0, 0, 3, 0, 0, 2, 2, 0, 5};
+	uint8 testimg[4*4] = {4, 7, 4, 0, 4, 1, 1, 0, 0, 3, 0, 0, 2, 2, 0, 5};
 
+	srand(time(NULL));
 	contidx = 0;
 	//	f.open("C:/Users/jwryu/RUG/2018/AlphaTree/AlphaTree_grey_Exp.dat", std::ofstream::app);
 	fcheck.open(OUTPUT_FNAME);
@@ -135,6 +168,9 @@ int main(int argc, char **argv)
 
 			cout << cnt << ": " << str1 << ' ' << height << 'x' << width << endl;
 
+			//uint64 *hdrimg = new uint64[width * height * channel];
+			//RandomizedHDRimage(hdrimg, testimg, 16);
+
 			if (channel != 1)
 			{
 				cout << "input should be a greyscale image" << endl;
@@ -148,10 +184,12 @@ int main(int argc, char **argv)
 				memuse = max_memuse = 0;
 				auto wcts = std::chrono::system_clock::now();
 
+				//hdrtree = (AlphaTree<int32, uint64>*)Malloc(sizeof(AlphaTree<int32, uint64>));
+				//hdrtree->BuildAlphaTree(hdrimg, 4, 4, channel, 4);
+
 				tree = (AlphaTree<int32, uint8>*)Malloc(sizeof(AlphaTree<int32, uint8>));
-				//		start = clock();
 				tree->BuildAlphaTree(cvimg.data, height, width, channel, 4);
-				//tree->BuildAlphaTree(testimg, 4, 4, channel, 8);
+				//tree->BuildAlphaTree(testimg, 4, 4, channel, 4);
 				std::chrono::duration<double> wctduration = (std::chrono::system_clock::now() - wcts);
 				runtime = wctduration.count();
 				minruntime = testrep == 0 ? runtime : min(runtime, minruntime);
@@ -163,7 +201,7 @@ int main(int argc, char **argv)
 
 			pixels_processed += width * height;
 			time_elapsed += minruntime;
-			cout << "Time Elapsed: " << minruntime << " mean processing speed(Mpix/s): " << pixels_processed / (time_elapsed * 1000000) << endl;
+			cout << "Time Elapsed: " << minruntime << "# Nodes: " << tree->curSize << " mean processing speed(Mpix/s): " << pixels_processed / (time_elapsed * 1000000) << endl;
 			cvimg.release();
 			str1.clear();
 			tree->clear();
