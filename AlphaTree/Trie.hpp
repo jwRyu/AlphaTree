@@ -7,7 +7,7 @@ class Trie
 	Imgidx minidx;
 	Trieidx **trie;
 	//Imgidx *levelsize;
-	Imgidx imgsize, mask_field, mask_msb;
+	Imgidx imgsize, triesize, mask_field, mask_msb;
 	int8 shamt, numlevels;
 	//delayed non-leaf node push
 
@@ -21,13 +21,14 @@ public:
 		mask_field = (1 << shamt) - 1;
 		mask_msb = 1 << (shamt - 1);
 		this->imgsize = imgsize;
+		triesize = imgsize << 1;
 		numlevels = 1;
-		for (size = imgsize >> shamt; size; size >>= shamt)
+		for (size = triesize >> shamt; size; size >>= shamt)
 			numlevels++;
 		
 		trie = (Trieidx**)Malloc(sizeof(Trieidx*) * numlevels);
 		//levelsize = (Imgidx*)Malloc(sizeof(Imgidx) * numlevels);
-		size = imgsize;
+		size = triesize;
 		for (int8 i = 0; i < numlevels; i++)
 		{
 			size >>= shamt;
@@ -36,8 +37,8 @@ public:
 				trie[i][j] = 0;
 			//levelsize[i] = lvlsz;
 		}
-		minidx = imgsize;
-		this->push(imgsize);
+		minidx = triesize;
+		this->push(imgsize, 0);
 	}
 	~Trie()
 	{
@@ -46,25 +47,29 @@ public:
 		Free(trie);
 	}
 
-	void push(Imgidx in)
+	inline Imgidx top() { return minidx; }
+	void push(Imgidx in, int8 incidence)
 	{
-		Imgidx s_in = in >> shamt, shamt1;
+		Imgidx n, s_in, shamt1;
 		Trieidx *p;
 
-		if (in < minidx)
-			minidx = in;
+		n = (in << 1) + incidence;
+		s_in = n >> shamt;
+
+		if (n < minidx)
+			minidx = n;
 		p = &(trie[0][s_in]);
-		*p = *p | ((Trieidx)1 << (in & mask_field));
-		in = s_in;
+		*p = *p | ((Trieidx)1 << (n & mask_field));
+		n = s_in;
 		s_in >>= shamt;
 		for (int8 i = 1; i < numlevels; i++)
 		{
 			p = &(trie[i][s_in]);
-			shamt1 = in & mask_field;
+			shamt1 = n & mask_field;
 			if (((*p) >> shamt1) & 1)
 				break;
 			*p = *p | ((Trieidx)1 << shamt1);
-			in = s_in;
+			n = s_in;
 			s_in >>= shamt;
 		}
 	}
@@ -77,7 +82,7 @@ public:
 		shamt1 = minidx & mask_field;
 		p = &(trie[0][s_idx]);
 		*p = *p & (~((Trieidx)1 << shamt1++));
-		for (lvl = 0; !*p;)
+		for (lvl = 0; !*p;)//cost amortize later
 		{
 			minidx = s_idx;
 			s_idx >>= shamt;

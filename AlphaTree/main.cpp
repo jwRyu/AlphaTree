@@ -23,7 +23,7 @@ using namespace std;
 
 #define INPUTIMAGE_DIR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/Grey"
 #define INPUTIMAGE_DIR_COLOUR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/Colour" //colour images are used after rgb2grey conversion
-#define REPEAT 10
+#define REPEAT 5
 #define RUN_TSE_ONLY 0
 
 #define DEBUG 0
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 	std::string path;
 	double time_elapsed = 0;
 	double pixels_processed = 0;
-	uint8 testimg[4*4] = {4, 7, 4, 0, 4, 1, 1, 0, 0, 3, 0, 0, 2, 2, 0, 5};
+	uint8 testimg[4*4] = {4, 4, 2, 0, 4, 1, 1, 0, 0, 3, 0, 0, 2, 2, 0, 5};
 
 	srand(time(NULL));
 	contidx = 0;
@@ -201,7 +201,7 @@ int main(int argc, char **argv)
 
 			pixels_processed += width * height;
 			time_elapsed += minruntime;
-			cout << "Time Elapsed: " << minruntime << "# Nodes: " << tree->curSize << " mean processing speed(Mpix/s): " << pixels_processed / (time_elapsed * 1000000) << endl;
+			cout << "Time Elapsed: " << minruntime << " # Nodes: " << tree->curSize << " mean processing speed(Mpix/s): " << pixels_processed / (time_elapsed * 1000000) << endl;
 			cvimg.release();
 			str1.clear();
 			tree->clear();
