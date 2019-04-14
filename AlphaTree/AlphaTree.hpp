@@ -545,15 +545,16 @@ class AlphaTree
 
 	void Flood_HQueue(Pixel* img)
 	{
-		Imgidx imgsize, dimgsize, nredges, x0, p;
+		Imgidx imgsize, dimgsize, nredges, x0;
 		int32 numlevels, max_level, current_level, next_level;
 		HQueue<Imgidx>* hqueue;
 		Imgidx *dhist;
 		Pixel *dimg;
 		Pixel dissim;
 		Imgidx iChild, *levelroot;
-		uint8 *isVisited;
+		uint8 *isVisited, *isAvailable, isAv;;
 		Imgidx *pParentAry;
+		Imgidx p, q, wstride_d = width << 2, wstride0 = width + 1, wstride1 = width - 1;
 
 		imgsize = width * height;
 		nredges = width * (height - 1) + (width - 1) * height;
@@ -564,10 +565,15 @@ class AlphaTree
 		dimg = (Pixel*)Malloc((size_t)dimgsize * sizeof(Pixel));
 		levelroot = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx));
 		isVisited = (uint8*)Malloc((size_t)((imgsize + 7) >> 3));
+		if (connectivity == 4)
+			isAvailable = (uint8*)Malloc((size_t)((imgsize + 1) >> 1));
+		else
+			isAvailable = (uint8*)Malloc((size_t)(imgsize));
 		for (p = 0; p < numlevels; p++)
 			levelroot[p] = NULL_LEVELROOT;
 		memset(dhist, 0, (size_t)numlevels * sizeof(int32));
 		memset(isVisited, 0, (size_t)((imgsize + 7) >> 3));
+		init_isAvailable(isAvailable);
 
 		max_level = (uint8)(numlevels - 1);
 		
@@ -621,50 +627,29 @@ class AlphaTree
 #if !HQUEUE_COST_AMORTIZE
 				hqueue->find_min_level();
 #endif
+				if (connectivity == 4)
+				{
+					isAv = get_field(isAvailable, p);
+					q = p << 1;
 
-				if (LEFT_AVAIL(p, width) && !is_visited(isVisited, p - 1))
-				{
-					dissim = (int32)dimg[dimg_idx_h(p - 1)];
-					hqueue->push(p - 1, dissim);
-					if (levelroot[dissim] == NULL_LEVELROOT)
-#if DELAYED_NODE_ALLOC
-						levelroot[dissim] = ANODE_CANDIDATE;
-#else
-						levelroot[dissim] = NewAlphaNode((uint8)dissim);
-#endif
+					if (is_available(isAv, 0) && !is_visited(isVisited, p + width))		push_neighbour(hqueue, levelroot, dimg, p + width, q);
+					if (is_available(isAv, 1) && !is_visited(isVisited, p + 1))			push_neighbour(hqueue, levelroot, dimg, p + 1, q + 1);
+					if (is_available(isAv, 2) && !is_visited(isVisited, p - 1))			push_neighbour(hqueue, levelroot, dimg, p - 1, q - 1);
+					if (is_available(isAv, 3) && !is_visited(isVisited, p - width))		push_neighbour(hqueue, levelroot, dimg, p - width, q - (width << 1));
+
 				}
-				if (RIGHT_AVAIL(p, width) && !is_visited(isVisited, p + 1))
+				else
 				{
-					dissim = (int32)dimg[dimg_idx_h(p)];
-					hqueue->push(p + 1, dissim);
-					if (levelroot[dissim] == NULL_LEVELROOT)
-#if DELAYED_NODE_ALLOC
-						levelroot[dissim] = ANODE_CANDIDATE;
-#else
-						levelroot[dissim] = NewAlphaNode((uint8)dissim);
-#endif
-				}
-				if (UP_AVAIL(p, width) && !is_visited(isVisited, p - width))
-				{
-					dissim = (int32)dimg[dimg_idx_v(p - width)];
-					hqueue->push(p - width, dissim);
-					if (levelroot[dissim] == NULL_LEVELROOT)
-#if DELAYED_NODE_ALLOC
-						levelroot[dissim] = ANODE_CANDIDATE;
-#else
-						levelroot[dissim] = NewAlphaNode((uint8)dissim);
-#endif
-				}
-				if (DOWN_AVAIL(p, width, imgsize) && !is_visited(isVisited, p + width))
-				{
-					dissim = (int32)dimg[dimg_idx_v(p)];
-					hqueue->push(p + width, dissim);
-					if (levelroot[dissim] == NULL_LEVELROOT)
-#if DELAYED_NODE_ALLOC
-						levelroot[dissim] = ANODE_CANDIDATE;
-#else
-						levelroot[dissim] = NewAlphaNode((uint8)dissim);
-#endif
+					isAv = isAvailable[p];
+					q = p << 2;
+					if (is_available(isAv, 0) && !is_visited(isVisited, p + wstride1))		push_neighbour(hqueue, levelroot, dimg, p + wstride1, q);
+					if (is_available(isAv, 1) && !is_visited(isVisited, p + width))			push_neighbour(hqueue, levelroot, dimg, p + width, q + 1);
+					if (is_available(isAv, 2) && !is_visited(isVisited, p + wstride0))		push_neighbour(hqueue, levelroot, dimg, p + wstride0, q + 2);
+					if (is_available(isAv, 3) && !is_visited(isVisited, p + 1))				push_neighbour(hqueue, levelroot, dimg, p + 1, q + 3);
+					if (is_available(isAv, 4) && !is_visited(isVisited, p - wstride1))		push_neighbour(hqueue, levelroot, dimg, p - wstride1, q - wstride_d + 4);
+					if (is_available(isAv, 5) && !is_visited(isVisited, p - width))			push_neighbour(hqueue, levelroot, dimg, p - width, q - wstride_d + 1);
+					if (is_available(isAv, 6) && !is_visited(isVisited, p - wstride0))		push_neighbour(hqueue, levelroot, dimg, p - wstride0, q - wstride_d - 2);
+					if (is_available(isAv, 7) && !is_visited(isVisited, p - 1))				push_neighbour(hqueue, levelroot, dimg, p - 1, q - 1);
 				}
 
 				if (current_level > hqueue->min_level)
@@ -681,9 +666,7 @@ class AlphaTree
 #endif
 
 			}
-			//		if(tree->curSize > 22051838 && (tree->curSize))
-				//		printf("curSize: %d\n",tree->curSize);
-					//Redundant node removal
+
 			if (node[iChild].parentidx == levelroot[current_level] &&
 				node[levelroot[current_level]].area == node[iChild].area)
 			{
@@ -730,6 +713,7 @@ class AlphaTree
 		Free(dimg);
 		Free(levelroot);
 		Free(isVisited);
+		Free(isAvailable);
 	}
 
 // 	void Flood_HQueue(Pixel* img)
