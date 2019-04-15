@@ -10,7 +10,7 @@
 #define HQUEUE_COST_AMORTIZE	1
 
 #define NULL_LEVELROOT		0xffffffff
-#define ANODE_CANDIDATE		0xfffffffe
+#define NODE_CANDIDATE		0xfffffffe
 
 #define dimg_idx_v(pidx) ((pidx)<<1)
 #define dimg_idx_h(pidx) ((pidx)<<1)+1
@@ -53,14 +53,45 @@ double size_add[4] = { .05, 0, 0.15, 0 };
 */
 
 template<class Imgidx, class Pixel>
-struct AlphaNode
+class AlphaNode
 {
+public:
 	Imgidx area;
 	Pixel level;  /* alpha of flat zone */
 	double sumPix;
 	Pixel minPix;
 	Pixel maxPix;
 	Imgidx parentidx;
+
+	inline void set(Imgidx area, Pixel level, double sumPix, Pixel minPix, Pixel maxPix)
+	{
+		this->area = area;
+		this->level = level;
+		this->sumPix = sumPix;
+		this->minPix = minPix;
+		this->maxPix = maxPix;
+	}
+	inline void add(AlphaNode* q)
+	{
+		this->area += q->area;
+		this->sumPix += q->sumPix;
+		this->minPix = min(this->minPix, q->minPix);
+		this->maxPix = min(this->maxPix, q->maxPix);
+	}
+	inline void add(Pixel pix_val)
+	{
+		this->area++;
+		this->sumPix += (double)pix_val;
+		this->minPix = min(this->minPix, pix_val);
+		this->maxPix = min(this->maxPix, pix_val);
+	}
+	inline void copy(AlphaNode* q)
+	{
+		this->area = q->area;
+		this->sumPix = q->sumPix;
+		this->minPix = q->minPix;
+		this->maxPix = q->maxPix;
+	}
 };
 
 template<class Imgidx, class Pixel>
@@ -412,37 +443,40 @@ class AlphaTree
 		hqueue->push(idx, dissim);
 		if (levelroot[dissim] == NULL_LEVELROOT)
 #if DELAYED_NODE_ALLOC
-			levelroot[dissim] = ANODE_CANDIDATE;
+			levelroot[dissim] = NODE_CANDIDATE;
 #else
 			levelroot[dissim] = NewAlphaNode(dissim);
 #endif
 	}
-
+	inline void push_neighbour(Trie<Imgidx, Pixel> *trie, Imgidx rank, int8 incidence, Imgidx *levelroot)
+	{
+		trie->push(rank, incidence);
+#if DELAYED_NODE_ALLOC
+		levelroot[rank] = NODE_CANDIDATE;
+#else
+		do stuff
+#endif
+	}
+	
 #if DELAYED_NODE_ALLOC
 	inline void connectPix2Node(Imgidx* parentAry, Imgidx pidx, Pixel pix_val, Imgidx *levelroot, int32 level)
 	{
 		AlphaNode<Imgidx, Pixel>* pNode;
 		Imgidx iNode = levelroot[level];
-		if (iNode == ANODE_CANDIDATE)
+		if (iNode == NODE_CANDIDATE)
 		{
 			iNode = NewAlphaNode();
 			levelroot[level] = iNode;
 			parentAry[pidx] = iNode;
 			pNode = node + iNode;
-			pNode->area = 1;
-			pNode->level = level;
-			pNode->maxPix = pix_val;
-			pNode->minPix = pix_val;
-			pNode->sumPix = (double)pix_val;
+
+			pNode->set(1, level, (double)pix_val, pix_val, pix_val);
 		}
 		else
 		{
 			pNode = node + iNode;
 			parentAry[pidx] = iNode;
-			pNode->area++;
-			pNode->maxPix = max(pNode->maxPix, pix_val);
-			pNode->minPix = min(pNode->minPix, pix_val);
-			pNode->sumPix += pix_val;
+			pNode->add(pix_val);
 		}
 	}
 #else
@@ -450,10 +484,7 @@ class AlphaTree
 	{
 		AlphaNode<Imgidx, Pixel> *pNode = &node[iNode];
 		parentAry[pidx] = iNode;
-		pNode->area++;
-		pNode->maxPix = max(pNode->maxPix, pix_val);
-		pNode->minPix = min(pNode->minPix, pix_val);
-		pNode->sumPix += pix_val;
+		pNode->add(pix_val);
 	}
 #endif
 
@@ -462,42 +493,33 @@ class AlphaTree
 	{
 		AlphaNode<Imgidx, Pixel> *pPar, *pChild;
 		Imgidx iPar = levelroot[level];
-		if (iPar == ANODE_CANDIDATE)
+		if (iPar == NODE_CANDIDATE)
 		{
 			iPar = NewAlphaNode();
 			levelroot[level] = iPar;
 			pPar = node + iPar;
 			pChild = node + iChild;
 			pChild->parentidx = iPar;
-			pPar->area = pChild->area;
-			pPar->maxPix = pChild->maxPix;
-			pPar->minPix = pChild->minPix;
-			pPar->sumPix = pChild->sumPix;
 			pPar->level = level;
+			pPar->copy(pChild);
 		}
 		else
 		{
 			pPar = node + iPar;
 			pChild = node + iChild;
 			pChild->parentidx = iPar;
-			pPar->area += pChild->area;
-			pPar->maxPix = max(pChild->maxPix, pPar->maxPix);
-			pPar->minPix = min(pChild->minPix, pPar->minPix);
-			pPar->sumPix += pChild->sumPix;
+			pPar->add(pChild);
 		}
 	}
 #else
 	inline void connectNode2Node(AlphaNode<Imgidx, Pixel>* pPar, Imgidx iPar, AlphaNode<Imgidx, Pixel>* pNode)
 	{
 		pNode->parentidx = iPar;
-		pPar->area += pNode->area;
-		pPar->maxPix = max(pNode->maxPix, pPar->maxPix);
-		pPar->minPix = min(pNode->minPix, pPar->minPix);
-		pPar->sumPix += pNode->sumPix;
+		pPar->add(pNode);
 	}
 #endif
 #if DELAYED_NODE_ALLOC
-	inline Imgidx NewAlphaNode() //Fix it later - no need to initialize
+	inline Imgidx NewAlphaNode()
 	{
 		AlphaNode<Imgidx, Pixel> *pNew = node + curSize;
 
@@ -553,12 +575,11 @@ class AlphaTree
 		Pixel dissim;
 		Imgidx iChild, *levelroot;
 		uint8 *isVisited, *isAvailable, isAv;;
-		Imgidx *pParentAry;
 		Imgidx p, q, wstride_d = width << 2, wstride0 = width + 1, wstride1 = width - 1;
 
 		imgsize = width * height;
-		nredges = width * (height - 1) + (width - 1) * height;
-		dimgsize = 2 * width * height; //To make indexing easier
+		nredges = width * (height - 1) + (width - 1) * height + ((connectivity == 8) ? ((width - 1) * (height - 1) * 2) : 0);
+		dimgsize = (connectivity >> 1) * width * height;
 		numlevels = 1 << (8 * sizeof(uint8));
 
 		dhist = (Imgidx*)Malloc((size_t)numlevels * sizeof(Imgidx));
@@ -598,11 +619,9 @@ class AlphaTree
 
 		parentAry = (int32*)Malloc((size_t)imgsize * sizeof(int32));
 		node = (AlphaNode<Imgidx, Pixel>*)Malloc((size_t)maxSize * sizeof(AlphaNode<Imgidx, Pixel>));
-
-		pParentAry = parentAry;
-
+		
 #if DELAYED_NODE_ALLOC
-		levelroot[max_level + 1] = ANODE_CANDIDATE;
+		levelroot[max_level + 1] = NODE_CANDIDATE;
 #else
 		levelroot[max_level + 1] = NewAlphaNode((uint8)max_level);
 		node[levelroot[max_level + 1]].parentidx = levelroot[max_level + 1];
@@ -636,7 +655,6 @@ class AlphaTree
 					if (is_available(isAv, 1) && !is_visited(isVisited, p + 1))			push_neighbour(hqueue, levelroot, dimg, p + 1, q + 1);
 					if (is_available(isAv, 2) && !is_visited(isVisited, p - 1))			push_neighbour(hqueue, levelroot, dimg, p - 1, q - 1);
 					if (is_available(isAv, 3) && !is_visited(isVisited, p - width))		push_neighbour(hqueue, levelroot, dimg, p - width, q - (width << 1));
-
 				}
 				else
 				{
@@ -660,9 +678,9 @@ class AlphaTree
 #endif
 
 #if DELAYED_NODE_ALLOC
-				connectPix2Node(pParentAry, p, img[p], levelroot, current_level);
+				connectPix2Node(parentAry, p, img[p], levelroot, current_level);
 #else
-				connectPix2Node(pParentAry, p, img[p], node + levelroot[current_level], levelroot[current_level]);
+				connectPix2Node(parentAry, p, img[p], node + levelroot[current_level], levelroot[current_level]);
 #endif
 
 			}
@@ -679,11 +697,13 @@ class AlphaTree
 			next_level = current_level + 1;
 			while (next_level <= max_level && (levelroot[next_level] == NULL_LEVELROOT))
 				next_level++;
+
 #if DELAYED_NODE_ALLOC
 			connectNode2Node(levelroot, levelroot[current_level], next_level);
 #else
 			connectNode2Node(node + levelroot[next_level], levelroot[next_level], node + levelroot[current_level]);
 #endif
+
 
 			iChild = levelroot[current_level];
 			levelroot[current_level] = NULL_LEVELROOT;
@@ -696,16 +716,12 @@ class AlphaTree
 
 		for (p = 0; p < imgsize; p++)
 		{
-			if (node[pParentAry[p]].level)//Singleton 0-CC
+			if (node[parentAry[p]].level)//Singleton 0-CC
 			{
 				x0 = NewAlphaNode();
-				node[x0].level = 0;
-				node[x0].area = 1;
-				node[x0].maxPix =
-				node[x0].minPix = img[p];
-				node[x0].sumPix = (double)img[p];
-				node[x0].parentidx = pParentAry[p];
-				pParentAry[p] = x0;
+				(&node[x0])->set(1, 0, (double)img[p], img[p], img[p]);
+				node[x0].parentidx = parentAry[p];
+				parentAry[p] = x0;
 			}
 		}
 
@@ -883,7 +899,6 @@ class AlphaTree
 	{
 		Imgidx imgsize, dimgsize, nredges, x0;
 		Pixel current_rank, next_rank;
-		Imgidx numlevels;
 		Trie<Imgidx, int64> *trie;
 		RankItem<Imgidx, Pixel>* rankinfo;
 		Imgidx dimgidx;
@@ -921,43 +936,40 @@ class AlphaTree
 		imgsize = width * height;
 		nredges = width * (height - 1) + (width - 1) * height + ((connectivity == 8) ? ((width - 1) * (height - 1) * 2) : 0);
 		dimgsize = (connectivity >> 1) * width * height;
-		numlevels = 1 << (8 * sizeof(uint8));
-
+		
 		rankinfo = (RankItem<Imgidx, Pixel>*)Malloc(nredges * sizeof(RankItem<Imgidx, Pixel>));
 		rank = (Imgidx*)Malloc((size_t)dimgsize * sizeof(Imgidx));
 		//rank2alpha = (Pixel*)Malloc((size_t)nredges * sizeof(Pixel));
-		levelroot = (Imgidx*)Malloc((Imgidx)(numlevels + 1) * sizeof(Imgidx));
+		levelroot = (Imgidx*)Malloc((Imgidx)(nredges + 1) * sizeof(Imgidx));
 		isVisited = (uint8*)Malloc((size_t)((imgsize + 7) >> 3));
 		if (connectivity == 4)
 			isAvailable = (uint8*)Malloc((size_t)((imgsize + 1) >> 1));
 		else
 			isAvailable = (uint8*)Malloc((size_t)(imgsize));
-		for (p = 0; p < numlevels; p++)
+		
+		// with levelroot : finding minimum * 2, without : how are u going to....
+		for (p = 0; p < nredges; p++)
 			levelroot[p] = NULL_LEVELROOT;
+		levelroot[nredges] = NODE_CANDIDATE; // 
 		memset(isVisited, 0, (size_t)((imgsize + 7) >> 3));
 		init_isAvailable(isAvailable);
 
-/////// RADIX SORT!
-
 		compute_dimg(rank, rankinfo, img);
 		trie = new Trie<Imgidx, int64>(imgsize);
+// 
+// 		//tree size estimation (TSE)
+// 		
+// 		nrmsd = 0;
+// 		for (p = 0; p < numlevels; p++)
+// 			nrmsd += ((double)dhist[p]) * ((double)dhist[p]);
+// 		nrmsd = sqrt((nrmsd - (double)nredges) / ((double)nredges * ((double)nredges - 1.0)));
+// 		maxSize = min(imgsize, (Imgidx)(imgsize * A * (exp(SIGMA * nrmsd) + B + M)));
+// 		//maxSize = imgsize;
+// 		Free(dhist);
+		maxSize = 2 * imgsize;
 
-		//tree size estimation (TSE)
-		/*
-		nrmsd = 0;
-		for (p = 0; p < numlevels; p++)
-			nrmsd += ((double)dhist[p]) * ((double)dhist[p]);
-		nrmsd = sqrt((nrmsd - (double)nredges) / ((double)nredges * ((double)nredges - 1.0)));
-		maxSize = min(imgsize, (Imgidx)(imgsize * A * (exp(SIGMA * nrmsd) + B + M)));
-		//maxSize = imgsize;
-		Free(dhist);
-		*/
-
-		parentAry = (Imgidx*)Malloc((size_t)imgsize * sizeof(Imgidx));
+		parentAry = (int32*)Malloc((size_t)imgsize * sizeof(int32));
 		node = (AlphaNode<Imgidx, Pixel>*)Malloc((size_t)maxSize * sizeof(AlphaNode<Imgidx, Pixel>));
-
-		NewAlphaNode();
-		node[0].parentidx = 0;
 
 		current_rank = imgsize - 1;
 		//x0 = imgsize >> 1;
@@ -974,7 +986,7 @@ class AlphaTree
 				incidence = trietop & 1;	//remove tmp variables later if possible
 				cur_rank = trietop >> 1;	//remove tmp variables later if possible
 				dimgidx = rankinfo[cur_rank].dimgidx;
-				p = (dimgidx >> shamt) + (incidence_map[dimgidx & mask] & (incidence - 1)); //current pixle idx
+				p = (dimgidx >> shamt) + (incidence_map[dimgidx & mask] & (incidence - 1)); //current pixel idx
 
 				if (is_visited(isVisited, p))
 				{
@@ -990,10 +1002,10 @@ class AlphaTree
 					isAv = get_field(isAvailable, p);
 					q = p << 1;
 					
-					if (is_available(isAv, 0) && !is_visited(isVisited, p + width))		trie->push(rank[q], 0);
-					if (is_available(isAv, 1) && !is_visited(isVisited, p + 1))			trie->push(rank[q + 1], 0);
-					if (is_available(isAv, 2) && !is_visited(isVisited, p - 1))			trie->push(rank[q - 1], 1);
-					if (is_available(isAv, 3) && !is_visited(isVisited, p - width))		trie->push(rank[q - (width << 1)], 1);
+					if (is_available(isAv, 0) && !is_visited(isVisited, p + width))		push_neighbour(trie, rank[q], 0, levelroot); 
+					if (is_available(isAv, 1) && !is_visited(isVisited, p + 1))			push_neighbour(trie, rank[q + 1], 0, levelroot); 
+					if (is_available(isAv, 2) && !is_visited(isVisited, p - 1))			push_neighbour(trie, rank[q - 1], 1, levelroot); 
+					if (is_available(isAv, 3) && !is_visited(isVisited, p - width))		push_neighbour(trie, rank[q - (width << 1)], 1, levelroot);
 						
 				}
 				else
@@ -1001,31 +1013,25 @@ class AlphaTree
 					isAv = isAvailable[p];
 					q = p << 2;
 					
-					if (is_available(isAv, 0) && !is_visited(isVisited, p + wstride1))		trie->push(rank[q], 0);
-					if (is_available(isAv, 1) && !is_visited(isVisited, p + width))			trie->push(rank[q + 1], 0);
-					if (is_available(isAv, 2) && !is_visited(isVisited, p + wstride0))		trie->push(rank[q + 2], 0);
-					if (is_available(isAv, 3) && !is_visited(isVisited, p + 1))				trie->push(rank[q + 3], 0);
-					if (is_available(isAv, 4) && !is_visited(isVisited, p - wstride1))		trie->push(rank[q - wstride_d + 4], 1);
-					if (is_available(isAv, 5) && !is_visited(isVisited, p - width))			trie->push(rank[q - wstride_d + 1], 1);
-					if (is_available(isAv, 6) && !is_visited(isVisited, p - wstride0))		trie->push(rank[q - wstride_d - 2], 1);
-					if (is_available(isAv, 7) && !is_visited(isVisited, p - 1))				trie->push(rank[q - 1], 1);
+					if (is_available(isAv, 0) && !is_visited(isVisited, p + wstride1))		push_neighbour(trie, rank[q], 0, levelroot);
+					if (is_available(isAv, 1) && !is_visited(isVisited, p + width))			push_neighbour(trie, rank[q + 1], 0, levelroot);
+					if (is_available(isAv, 2) && !is_visited(isVisited, p + wstride0))		push_neighbour(trie, rank[q + 2], 0, levelroot);
+					if (is_available(isAv, 3) && !is_visited(isVisited, p + 1))				push_neighbour(trie, rank[q + 3], 0, levelroot);
+					if (is_available(isAv, 4) && !is_visited(isVisited, p - wstride1))		push_neighbour(trie, rank[q - wstride_d + 4], 1, levelroot); 
+					if (is_available(isAv, 5) && !is_visited(isVisited, p - width))			push_neighbour(trie, rank[q - wstride_d + 1], 1, levelroot);
+					if (is_available(isAv, 6) && !is_visited(isVisited, p - wstride0))		push_neighbour(trie, rank[q - wstride_d - 2], 1, levelroot);
+					if (is_available(isAv, 7) && !is_visited(isVisited, p - 1))				push_neighbour(trie, rank[q - 1], 1, levelroot);
 				}
 
 				//yogi
 			
-//				if (current_level > hqueue->min_level)
-//k					current_level = hqueue->min_level;
+				if (current_rank > trie->min_rank())
+					current_rank = trie->min_rank();
 #if HQUEUE_COST_AMORTIZE
 //				else
 				//	hqueue->find_min_level();
 #endif
-
-#if DELAYED_NODE_ALLOC
-				//connectPix2Node(pParentAry, p, img[p], levelroot, current_level);
-#else
-				connectPix2Node(p, img[p], levelroot[current_rank]);
-#endif
-
+				connectPix2Node(parentAry, p, img[p], levelroot, rankinfo[current_rank].alpha);
 			}
 			//		if(curSize > 22051838 && (curSize))
 				//		printf("curSize: %d\n",curSize);
@@ -1040,11 +1046,12 @@ class AlphaTree
 #endif
 			}
 
+			//why was this necessary...?
 			next_rank = current_rank + 1;
 			while (~next_rank && levelroot[next_rank] == NULL_LEVELROOT)
 				next_rank++;
 #if DELAYED_NODE_ALLOC
-			//connectNode2Node(levelroot, levelroot[current_level], next_level);
+			connectNode2Node(levelroot, levelroot[current_level], next_level);
 #else
 			connectNode2Node(node + levelroot[next_rank], levelroot[next_rank], node + levelroot[current_rank]);
 #endif

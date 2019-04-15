@@ -169,8 +169,8 @@ int main(int argc, char **argv)
 
 			cout << cnt << ": " << str1 << ' ' << height << 'x' << width << endl;
 
-			//uint64 *hdrimg = new uint64[width * height * channel];
-			//RandomizedHDRimage(hdrimg, testimg, 16);
+			uint64 *hdrimg = new uint64[width * height * channel];
+			RandomizedHDRimage(hdrimg, testimg, 16);
 
 			if (channel != 1)
 			{
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 				//hdrtree->BuildAlphaTree(hdrimg, 4, 4, channel, 4);
 
 				tree = (AlphaTree<int32, uint8>*)Malloc(sizeof(AlphaTree<int32, uint8>));
-				tree->BuildAlphaTree(cvimg.data, height, width, channel, 4);
+				tree->BuildAlphaTree(cvimg.data, height, width, channel, 8);
 				//tree->BuildAlphaTree(testimg, 4, 4, channel, 4);
 				std::chrono::duration<double> wctduration = (std::chrono::system_clock::now() - wcts);
 				runtime = wctduration.count();

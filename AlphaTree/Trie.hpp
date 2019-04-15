@@ -48,6 +48,7 @@ public:
 	}
 
 	inline Imgidx top() { return minidx; }
+	inline Imgidx min_rank() { return minidx >> 1; }
 	void push(Imgidx in, int8 incidence)
 	{
 		Imgidx n, s_in, shamt1;
