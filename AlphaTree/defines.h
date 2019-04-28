@@ -11,3 +11,5 @@ typedef char int8;
 typedef short int16;
 typedef long int32;
 typedef long long int64;
+
+typedef int64 trieidx;

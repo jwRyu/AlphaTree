@@ -1,27 +1,33 @@
 #pragma once
 #include "allocator.h"
 
+//tmptmptmptmpt tmp
+//#include <fstream>
+//using namespace std;
+
+
 template<class Imgidx, class Trieidx>
 class Trie
 {
 	Imgidx minidx;
 	Trieidx **trie;
 	//Imgidx *levelsize;
-	Imgidx imgsize, triesize, mask_field, mask_msb;
+	Imgidx triesize, mask_field, mask_msb;
 	int8 shamt, numlevels;
 	//delayed non-leaf node push
+		
+	//tmptmptmp
+	//ofstream f;
 
 public:
-	Trie(Imgidx imgsize)
+	Trie(Imgidx triesize)
 	{
-		Imgidx size, lvlsz;
+		Imgidx size;
 		shamt = 2;
 		for (int8 nbyte = sizeof(Trieidx); nbyte; nbyte >>= 1)
 			shamt++;
 		mask_field = (1 << shamt) - 1;
 		mask_msb = 1 << (shamt - 1);
-		this->imgsize = imgsize;
-		triesize = imgsize << 1;
 		numlevels = 1;
 		for (size = triesize >> shamt; size; size >>= shamt)
 			numlevels++;
@@ -38,13 +44,17 @@ public:
 			//levelsize[i] = lvlsz;
 		}
 		minidx = triesize;
-		this->push(imgsize, 0);
+
+		//tmp!
+		//f.open("C:/Users/jwryu/Google Drive/RUG/2019/AlphaTree_Trie/trie.dat", std::ofstream::app);
 	}
 	~Trie()
 	{
 		for (int8 i = 0; i < numlevels; i++)
 			Free(trie[i]);
 		Free(trie);
+		
+		//f.close();//tmptmp
 	}
 
 	inline Imgidx top() { return minidx; }
@@ -53,6 +63,9 @@ public:
 	{
 		Imgidx n, s_in, shamt1;
 		Trieidx *p;
+
+		//tmp
+		//f << '0' << '\t' << in << endl;
 
 		n = (in << 1) + incidence;
 		s_in = n >> shamt;
@@ -67,8 +80,8 @@ public:
 		{
 			p = &(trie[i][s_in]);
 			shamt1 = n & mask_field;
-			if (((*p) >> shamt1) & 1)
-				break;
+ 			//if (((*p) >> shamt1) & 1)
+ 				//break;
 			*p = *p | ((Trieidx)1 << shamt1);
 			n = s_in;
 			s_in >>= shamt;
@@ -80,10 +93,13 @@ public:
 		Trieidx *p, tmp;
 		int8 lvl;
 
+		//tmp
+		//f << '1' << '\t' << (minidx>>1) << endl;
+
 		shamt1 = minidx & mask_field;
 		p = &(trie[0][s_idx]);
 		*p = *p & (~((Trieidx)1 << shamt1++));
-		for (lvl = 0; !*p;)//cost amortize later
+		for (lvl = 0; !*p;)
 		{
 			minidx = s_idx;
 			s_idx >>= shamt;

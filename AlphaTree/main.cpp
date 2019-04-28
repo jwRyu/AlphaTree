@@ -14,17 +14,17 @@
 #include <fstream>
 
 
-#include "AlphaTree.hpp"
-#include "HQueue.hpp"
+#include "AlphaTree.h"
+#include "HQueue.h"
 #include "allocator.h"
-#include "Trie.hpp"
+#include "Trie.h"
 using namespace std;
 
-#define OUTPUT_FNAME "C:/Users/jwryu/RUG/2018/AlphaTree/test.dat"
+#define OUTPUT_FNAME "C:/Users/jwryu/Google Drive/RUG/2019/AlphaTree_Trie/tmp.dat"
 
 #define INPUTIMAGE_DIR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/Grey"
 #define INPUTIMAGE_DIR_COLOUR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/Colour" //colour images are used after rgb2grey conversion
-#define REPEAT 5
+#define REPEAT 1
 #define RUN_TSE_ONLY 0
 
 #define DEBUG 0
@@ -91,8 +91,8 @@ void DeleteAlphaTree(AlphaTree* tree)
 
 int main(int argc, char **argv)
 {
-	AlphaTree<int32, uint8> *tree;
-	AlphaTree<int32, uint64> *hdrtree;
+//	AlphaTree<int32, uint8> *tree;
+	AlphaTree<int32, uint64> *tree;
 	int32 width, height, channel;
 	int32 cnt = 0;
 	ofstream f;
@@ -102,7 +102,9 @@ int main(int argc, char **argv)
 	std::string path;
 	double time_elapsed = 0;
 	double pixels_processed = 0;
-	uint8 testimg[4*4] = {4, 4, 2, 0, 4, 1, 1, 0, 0, 3, 0, 0, 2, 2, 0, 5};
+//	uint8 testimg[4 * 4] = { 4, 4, 2, 0, 4, 1, 1, 0, 0, 3, 0, 0, 2, 2, 0, 5 };
+	uint8 testimg[4 * 4] = { 30, 37, 26, 22, 6, 4, 7, 30, 36, 26, 6, 24, 8, 35, 35, 10 };
+	uint64 testimg64[4 * 4] = { 30, 37, 26, 22, 6, 4, 7, 30, 36, 26, 6, 24, 8, 35, 35, 10 };
 
 	srand(time(NULL));
 	contidx = 0;
@@ -111,12 +113,13 @@ int main(int argc, char **argv)
 	if (fcheck.good())
 	{
 		cout << "Output file \"" << OUTPUT_FNAME << "\" already exists. Overwrite? (y/n/a)";
-		//cin >> in;
-		in = 'y';
+		in = 'a';
+		cin >> in;
 		if (in == 'a')
 		{
 			f.open(OUTPUT_FNAME, std::ofstream::app);
 			cout << "Start from : ";
+			contidx = 617;
 			cin >> contidx;
 		}
 		else if (in == 'y')
@@ -132,7 +135,7 @@ int main(int argc, char **argv)
 	if (mem_scheme > 0)
 		break;
 #endif
-	for (i = 0; i < 2; i++) // grey, colour loop
+	for (i = 1; i < 2; i++) // grey, colour loop
 	{
 		if (i == 0)
 			path = INPUTIMAGE_DIR;
@@ -170,7 +173,7 @@ int main(int argc, char **argv)
 			cout << cnt << ": " << str1 << ' ' << height << 'x' << width << endl;
 
 			uint64 *hdrimg = new uint64[width * height * channel];
-			RandomizedHDRimage(hdrimg, testimg, 16);
+			RandomizedHDRimage(hdrimg, cvimg.data, width * height);
 
 			if (channel != 1)
 			{
@@ -185,20 +188,21 @@ int main(int argc, char **argv)
 				memuse = max_memuse = 0;
 				auto wcts = std::chrono::system_clock::now();
 
-				//hdrtree = (AlphaTree<int32, uint64>*)Malloc(sizeof(AlphaTree<int32, uint64>));
-				//hdrtree->BuildAlphaTree(hdrimg, 4, 4, channel, 4);
+				tree = (AlphaTree<int32, uint64>*)Malloc(sizeof(AlphaTree<int32, uint64>));
+				tree->BuildAlphaTree(hdrimg, height, width, channel, 4);
+				//hdrtree->BuildAlphaTree(testimg64, 4, 4, channel, 8);
 
-				tree = (AlphaTree<int32, uint8>*)Malloc(sizeof(AlphaTree<int32, uint8>));
-				tree->BuildAlphaTree(cvimg.data, height, width, channel, 8);
+				//tree = (AlphaTree<int32, uint8>*)Malloc(sizeof(AlphaTree<int32, uint8>));
+				//tree->BuildAlphaTree(cvimg.data, height, width, channel, 4);
 				//tree->BuildAlphaTree(testimg, 4, 4, channel, 4);
 				std::chrono::duration<double> wctduration = (std::chrono::system_clock::now() - wcts);
 				runtime = wctduration.count();
 				minruntime = testrep == 0 ? runtime : min(runtime, minruntime);
 
 				if (testrep < (REPEAT - 1))
-					tree->clear();
+					tree->clear();// tree->clear();
 			}
-			f << p.path().string().c_str() << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << tree->nrmsd << '\t' << tree->maxSize << '\t' << tree->curSize << '\t' << minruntime << i << endl;
+			f << p.path().string().c_str() << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << tree->nrmsd << '\t' << tree->maxSize << '\t' << tree->curSize << '\t' << minruntime << endl;
 
 			pixels_processed += width * height;
 			time_elapsed += minruntime;
@@ -206,7 +210,7 @@ int main(int argc, char **argv)
 			cvimg.release();
 			str1.clear();
 			tree->clear();
-			//return 0;
+			delete[] hdrimg;		
 		}
 	}
 

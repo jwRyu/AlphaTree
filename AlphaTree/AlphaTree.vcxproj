@@ -126,15 +126,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="allocator.h" />
-    <ClInclude Include="AlphaTree.hpp" />
+    <ClInclude Include="AlphaTree.h" />
     <ClInclude Include="defines.h" />
-    <ClInclude Include="HQueue.hpp" />
-    <ClInclude Include="Trie.hpp" />
+    <ClInclude Include="HQueue.h" />
+    <ClInclude Include="HybridQueue.h" />
+    <ClInclude Include="Trie.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="allocator.cpp" />
     <ClCompile Include="AlphaTree.cpp" />
     <ClCompile Include="HQueue.cpp" />
+    <ClCompile Include="HybridQueue.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Trie.cpp" />
   </ItemGroup>

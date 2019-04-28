@@ -21,13 +21,16 @@
     <ClInclude Include="defines.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="HQueue.hpp">
+    <ClInclude Include="HybridQueue.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="AlphaTree.hpp">
+    <ClInclude Include="HQueue.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Trie.hpp">
+    <ClInclude Include="AlphaTree.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Trie.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -45,6 +48,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Trie.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="HybridQueue.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
