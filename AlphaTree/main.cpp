@@ -191,9 +191,9 @@ int main(int argc, char **argv)
 				auto wcts = std::chrono::system_clock::now();
 
 				tree = (AlphaTree<int32, uint64>*)Malloc(sizeof(AlphaTree<int32, uint64>));
-				tree->BuildAlphaTree(hdrimg, height, width, channel, 4);
+				//tree->BuildAlphaTree(hdrimg, height, width, channel, 4);
 				//tree->BuildAlphaTree(testimg64, 4, 4, channel, 8);
-				//tree->BuildAlphaTree(testimg64, 30, 30, channel, 4);
+				tree->BuildAlphaTree(testimg64, 30, 30, channel, 4);
 
 				//tree = (AlphaTree<int32, uint8>*)Malloc(sizeof(AlphaTree<int32, uint8>));
 				//tree->BuildAlphaTree(cvimg.data, height, width, channel, 4);

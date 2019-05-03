@@ -1229,7 +1229,7 @@ class AlphaTree
 			queue->push(rank[3], 0);
 		}
 
-		current_rank = queue->top_idx();
+		queue->top(current_rank, incidence);
 		connectPix2Node(parentAry, 0, img[0], current_rank, rankinfo[current_rank].alpha);
 		//x0 = imgsize >> 1;
 		iChild = current_rank;
@@ -1238,9 +1238,7 @@ class AlphaTree
 		{
 			while (1)//((trie->top() >> 1) <= current_rank)
 			{
-				//trietop = queue->top_idx();		//remove tmp variables later if possible
-				incidence = queue->top_incidence();	//0 is outgoing, 1 is incoming
-				top_rank = queue->top_idx();	//remove tmp variables later if possible
+				queue->top(top_rank, incidence);
 				dimgidx = rankinfo[top_rank].dimgidx;
 				p = (dimgidx >> shamt) + (incidence_map[dimgidx & mask] & (incidence - 1)); //current pixel idx
 
@@ -1287,9 +1285,10 @@ class AlphaTree
 						queue->push(rank[q - 1], 1);
 				}
 
-				if (current_rank > queue->top_idx())
+				queue->top(top_rank, incidence);
+				if (current_rank > top_rank)
 				{
-					current_rank = queue->top_idx();
+					current_rank = top_rank;
 					connectPix2Node(parentAry, p, img[p], current_rank, rankinfo[current_rank].alpha);
 				}
 				else
@@ -1311,7 +1310,7 @@ class AlphaTree
 // 			}
 
 			queue->pop();
-			next_rank = queue->top_idx();
+			queue->top(next_rank, incidence);
 
 			//Redundant node removal
 			if (node[iChild].parentidx == current_rank &&
@@ -1393,7 +1392,7 @@ public:
 		if(sizeof(Pixel) == 1)
 			Flood_HQueue(img);
 		else
-			Flood_Trie(img);
-			//Flood_HybridQueue(img);
+			//Flood_Trie(img);
+			Flood_HybridQueue(img);
 	}
 };
