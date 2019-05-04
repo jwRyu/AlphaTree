@@ -44,7 +44,7 @@ public:
 			//levelsize[i] = lvlsz;
 		}
 		minidx = triesize;
-
+		//curSize = 0;
 		//tmp!
 // 		f.open("C:/Users/jwryu/Google Drive/RUG/2019/AlphaTree_Trie/trie0rrr.dat",std::ofstream::out);
 // 		f << triesize << endl;
@@ -60,6 +60,7 @@ public:
 
 	inline Imgidx top() { return minidx; }
 	inline Imgidx min_rank() { return minidx >> 1; }
+	inline Imgidx min_incidence() { return minidx & 1; }
 	inline void push(Imgidx in, int8 incidence)
 	{
 		Imgidx n, s_in, shamt1;

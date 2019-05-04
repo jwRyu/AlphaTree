@@ -13,18 +13,17 @@
 #include <iostream>
 #include <fstream>
 
-
 #include "AlphaTree.h"
 #include "HQueue.h"
 #include "allocator.h"
 #include "Trie.h"
 using namespace std;
 
-#define OUTPUT_FNAME "C:/Users/jwryu/Google Drive/RUG/2019/AlphaTree_Trie/tmp.dat"
+#define OUTPUT_FNAME "C:/Users/jwryu/Google Drive/RUG/2019/AlphaTree_Trie/test.dat"
 
 #define INPUTIMAGE_DIR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/Grey"
 #define INPUTIMAGE_DIR_COLOUR	"C:/Users/jwryu/Google Drive/RUG/2018/AlphaTree/imgdata/Colour" //colour images are used after rgb2grey conversion
-#define REPEAT 1
+#define REPEAT 5
 #define RUN_TSE_ONLY 0
 
 #define DEBUG 0
@@ -137,7 +136,7 @@ int main(int argc, char **argv)
 	if (mem_scheme > 0)
 		break;
 #endif
-	for (i = 1; i < 2; i++) // grey, colour loop
+	for (i = 0; i < 2; i++) // grey, colour loop
 	{
 		if (i == 0)
 			path = INPUTIMAGE_DIR;
@@ -183,36 +182,39 @@ int main(int argc, char **argv)
 				getc(stdin);
 				exit(-1);
 			}
-
-			double runtime, minruntime;
-			for (int testrep = 0; testrep < REPEAT; testrep++)
+			for(int8 algorithm = 0;algorithm < 2;algorithm++)
 			{
-				memuse = max_memuse = 0;
-				auto wcts = std::chrono::system_clock::now();
+				double runtime, minruntime;
+				for (int testrep = 0; testrep < REPEAT; testrep++)
+				{
+					memuse = max_memuse = 0;
+					auto wcts = std::chrono::system_clock::now();
 
-				tree = (AlphaTree<int32, uint64>*)Malloc(sizeof(AlphaTree<int32, uint64>));
-				//tree->BuildAlphaTree(hdrimg, height, width, channel, 4);
-				//tree->BuildAlphaTree(testimg64, 4, 4, channel, 8);
-				tree->BuildAlphaTree(testimg64, 30, 30, channel, 4);
+					tree = (AlphaTree<int32, uint64>*)Malloc(sizeof(AlphaTree<int32, uint64>));
+					tree->BuildAlphaTree(hdrimg, height, width, channel, 4, algorithm);
+					//tree->BuildAlphaTree(testimg64, 4, 4, channel, 8);
+					//tree->BuildAlphaTree(testimg64, 30, 30, channel, 4, algorithm);
 
-				//tree = (AlphaTree<int32, uint8>*)Malloc(sizeof(AlphaTree<int32, uint8>));
-				//tree->BuildAlphaTree(cvimg.data, height, width, channel, 4);
-				//tree->BuildAlphaTree(testimg, 4, 4, channel, 4);
-				std::chrono::duration<double> wctduration = (std::chrono::system_clock::now() - wcts);
-				runtime = wctduration.count();
-				minruntime = testrep == 0 ? runtime : min(runtime, minruntime);
+					//tree = (AlphaTree<int32, uint8>*)Malloc(sizeof(AlphaTree<int32, uint8>));
+					//tree->BuildAlphaTree(cvimg.data, height, width, channel, 4);
+					//tree->BuildAlphaTree(testimg, 4, 4, channel, 4);
+					std::chrono::duration<double> wctduration = (std::chrono::system_clock::now() - wcts);
+					runtime = wctduration.count();
+					minruntime = testrep == 0 ? runtime : min(runtime, minruntime);
 
-				if (testrep < (REPEAT - 1))
-					tree->clear();// tree->clear();
+					if (testrep < (REPEAT - 1))
+						tree->clear();// tree->clear();
+				}
+				f << p.path().string().c_str() << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << tree->nrmsd << '\t' << tree->maxSize << '\t' << tree->curSize << '\t' << minruntime << endl;
+
+				pixels_processed = width * height;
+				time_elapsed = minruntime;
+				cout << "Time Elapsed: " << minruntime << " # Nodes: " << tree->curSize << " mean processing speed(Mpix/s): " << pixels_processed / (time_elapsed * 1000000) << endl;
+				tree->clear();
 			}
-			f << p.path().string().c_str() << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << tree->nrmsd << '\t' << tree->maxSize << '\t' << tree->curSize << '\t' << minruntime << endl;
 
-			pixels_processed += width * height;
-			time_elapsed += minruntime;
-			cout << "Time Elapsed: " << minruntime << " # Nodes: " << tree->curSize << " mean processing speed(Mpix/s): " << pixels_processed / (time_elapsed * 1000000) << endl;
 			cvimg.release();
 			str1.clear();
-			tree->clear();
 			delete[] hdrimg;	
 			//break;//tmp
 		}

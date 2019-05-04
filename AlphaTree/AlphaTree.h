@@ -1187,7 +1187,7 @@ class AlphaTree
 
 		compute_dimg(rank, rankinfo, img);
 		queue = new HybridQueue<Imgidx>(nredges);
-		
+
 		//trie = new Trie<Imgidx, trieidx>(nredges << 1);
 		//trie->push(nredges, 0);
 
@@ -1216,8 +1216,8 @@ class AlphaTree
 		{
 			queue->push(rank[0], 0);
 			queue->push(rank[1], 0);
-// 			trie->push(rank[0], 0);
-// 			trie->push(rank[1], 0);
+			// 			trie->push(rank[0], 0);
+			// 			trie->push(rank[1], 0);
 		}
 		else
 		{
@@ -1229,7 +1229,7 @@ class AlphaTree
 			queue->push(rank[3], 0);
 		}
 
-		queue->top(current_rank, incidence);
+		current_rank = queue->top_idx();
 		connectPix2Node(parentAry, 0, img[0], current_rank, rankinfo[current_rank].alpha);
 		//x0 = imgsize >> 1;
 		iChild = current_rank;
@@ -1238,7 +1238,9 @@ class AlphaTree
 		{
 			while (1)//((trie->top() >> 1) <= current_rank)
 			{
-				queue->top(top_rank, incidence);
+				//trietop = queue->top_idx();		//remove tmp variables later if possible
+				incidence = queue->top_incidence();	//0 is outgoing, 1 is incoming
+				top_rank = queue->top_idx();	//remove tmp variables later if possible
 				dimgidx = rankinfo[top_rank].dimgidx;
 				p = (dimgidx >> shamt) + (incidence_map[dimgidx & mask] & (incidence - 1)); //current pixel idx
 
@@ -1285,10 +1287,9 @@ class AlphaTree
 						queue->push(rank[q - 1], 1);
 				}
 
-				queue->top(top_rank, incidence);
-				if (current_rank > top_rank)
+				if (current_rank > queue->top_idx())
 				{
-					current_rank = top_rank;
+					current_rank = queue->top_idx();
 					connectPix2Node(parentAry, p, img[p], current_rank, rankinfo[current_rank].alpha);
 				}
 				else
@@ -1310,7 +1311,7 @@ class AlphaTree
 // 			}
 
 			queue->pop();
-			queue->top(next_rank, incidence);
+			next_rank = queue->top_idx();
 
 			//Redundant node removal
 			if (node[iChild].parentidx == current_rank &&
@@ -1364,6 +1365,239 @@ class AlphaTree
 		Free(isVisited);
 		Free(isAvailable);
 	}
+
+	void Flood_HybridQueue_1(Pixel* img)
+	{
+		Imgidx imgsize, dimgsize, nredges, x0;
+		Imgidx current_rank, next_rank;
+		HybridQueue_1<Imgidx> *queue;
+		RankItem<Imgidx, Pixel>* rankinfo;
+		Imgidx dimgidx;
+		Imgidx *rank, top_rank;
+		int8 incidence, shamt, mask;
+		//		Pixel *rank2alpha;
+		Imgidx iChild, *levelroot;
+		uint8 *isVisited, *isAvailable, isAv;
+		Imgidx trietop, p, q, wstride_d = width << 2, wstride0 = width + 1, wstride1 = width - 1;
+		Imgidx incidence_map[4];
+
+		if (connectivity == 4)
+		{
+			incidence_map[0] = width;
+			incidence_map[1] = 1;
+			shamt = 1;
+			mask = 1;
+		}
+		else
+		{
+			incidence_map[0] = width - 1;
+			incidence_map[1] = width;
+			incidence_map[2] = width + 1;
+			incidence_map[3] = 1;
+			shamt = 2;
+			mask = 3;
+		}
+
+		imgsize = width * height;
+		nredges = width * (height - 1) + (width - 1) * height + ((connectivity == 8) ? ((width - 1) * (height - 1) * 2) : 0);
+		dimgsize = (connectivity >> 1) * width * height;
+
+		rankinfo = (RankItem<Imgidx, Pixel>*)Malloc(nredges * sizeof(RankItem<Imgidx, Pixel>));
+		rank = (Imgidx*)Malloc((size_t)dimgsize * sizeof(Imgidx));
+		//rank2alpha = (Pixel*)Malloc((size_t)nredges * sizeof(Pixel));
+		//levelroot = (Imgidx*)Malloc((Imgidx)(nredges + 1) * sizeof(Imgidx));
+		isVisited = (uint8*)Malloc((size_t)((imgsize + 7) >> 3));
+		if (connectivity == 4)
+			isAvailable = (uint8*)Malloc((size_t)((imgsize + 1) >> 1));
+		else
+			isAvailable = (uint8*)Malloc((size_t)(imgsize));
+
+		//	levelroot[p] = NULL_LEVELROOT;
+		//levelroot[nredges] = NODE_CANDIDATE; // 
+		memset(isVisited, 0, (size_t)((imgsize + 7) >> 3));
+		init_isAvailable(isAvailable);
+
+		compute_dimg(rank, rankinfo, img);
+		queue = new HybridQueue_1<Imgidx>(nredges);
+
+		//trie = new Trie<Imgidx, trieidx>(nredges << 1);
+		//trie->push(nredges, 0);
+
+
+// 		//tree size estimation (TSE)
+// 		
+// 		nrmsd = 0;
+// 		for (p = 0; p < numlevels; p++)
+// 			nrmsd += ((double)dhist[p]) * ((double)dhist[p]);
+// 		nrmsd = sqrt((nrmsd - (double)nredges) / ((double)nredges * ((double)nredges - 1.0)));
+// 		maxSize = min(imgsize, (Imgidx)(imgsize * A * (exp(SIGMA * nrmsd) + B + M)));
+// 		//maxSize = imgsize;
+// 		Free(dhist);
+		maxSize = nredges + imgsize;
+
+		parentAry = (int32*)Malloc((size_t)imgsize * sizeof(int32));
+		node = (AlphaNode<Imgidx, Pixel>*)Malloc((size_t)maxSize * sizeof(AlphaNode<Imgidx, Pixel>));
+		for (p = 0; p < maxSize; p++)
+		{
+			node[p].parentidx = -1;
+			node[p].area = 0;
+		}
+
+		visit(isVisited, 0);
+		if (connectivity == 4)
+		{
+			queue->push(rank[0], 0);
+			queue->push(rank[1], 0);
+			// 			trie->push(rank[0], 0);
+			// 			trie->push(rank[1], 0);
+		}
+		else
+		{
+			// 			trie->push(rank[1], 0);
+			// 			trie->push(rank[2], 0);
+			// 			trie->push(rank[3], 0);
+			queue->push(rank[1], 0);
+			queue->push(rank[2], 0);
+			queue->push(rank[3], 0);
+		}
+
+		current_rank = queue->top_idx();
+		connectPix2Node(parentAry, 0, img[0], current_rank, rankinfo[current_rank].alpha);
+		//x0 = imgsize >> 1;
+		iChild = current_rank;
+
+		while (1)//(current_rank <= nredges)
+		{
+			while (1)//((trie->top() >> 1) <= current_rank)
+			{
+				//trietop = queue->top_idx();		//remove tmp variables later if possible
+				incidence = queue->top_incidence();	//0 is outgoing, 1 is incoming
+				top_rank = queue->top_idx();	//remove tmp variables later if possible
+				dimgidx = rankinfo[top_rank].dimgidx;
+				p = (dimgidx >> shamt) + (incidence_map[dimgidx & mask] & (incidence - 1)); //current pixel idx
+
+				if (is_visited(isVisited, p))//yogi
+					break;
+				visit(isVisited, p);
+#if !HQUEUE_COST_AMORTIZE
+				//find_min_level();
+#endif
+				if (connectivity == 4)
+				{
+					isAv = get_field(isAvailable, p);
+					q = p << 1;
+
+					if (is_available(isAv, 0) && !is_visited(isVisited, p + width))
+						queue->push(rank[q], 0);
+					if (is_available(isAv, 1) && !is_visited(isVisited, p + 1))
+						queue->push(rank[q + 1], 0);
+					if (is_available(isAv, 2) && !is_visited(isVisited, p - 1))
+						queue->push(rank[q - 1], 1);
+					if (is_available(isAv, 3) && !is_visited(isVisited, p - width))
+						queue->push(rank[q - (width << 1)], 1);
+				}
+				else
+				{
+					isAv = isAvailable[p];
+					q = p << 2;
+
+					if (is_available(isAv, 0) && !is_visited(isVisited, p + wstride1))
+						queue->push(rank[q], 0);
+					if (is_available(isAv, 1) && !is_visited(isVisited, p + width))
+						queue->push(rank[q + 1], 0);
+					if (is_available(isAv, 2) && !is_visited(isVisited, p + wstride0))
+						queue->push(rank[q + 2], 0);
+					if (is_available(isAv, 3) && !is_visited(isVisited, p + 1))
+						queue->push(rank[q + 3], 0);
+					if (is_available(isAv, 4) && !is_visited(isVisited, p - wstride1))
+						queue->push(rank[q - wstride_d + 4], 1);
+					if (is_available(isAv, 5) && !is_visited(isVisited, p - width))
+						queue->push(rank[q - wstride_d + 1], 1);
+					if (is_available(isAv, 6) && !is_visited(isVisited, p - wstride0))
+						queue->push(rank[q - wstride_d - 2], 1);
+					if (is_available(isAv, 7) && !is_visited(isVisited, p - 1))
+						queue->push(rank[q - 1], 1);
+				}
+
+				if (current_rank > queue->top_idx())
+				{
+					current_rank = queue->top_idx();
+					connectPix2Node(parentAry, p, img[p], current_rank, rankinfo[current_rank].alpha);
+				}
+				else
+				{
+					connectPix2Node(parentAry, p, img[p], current_rank, rankinfo[current_rank].alpha);
+					break;
+				}
+			}
+
+			//Redundant node removal
+// 			if (node[iChild].parentidx == levelroot[current_rank] &&
+// 				node[levelroot[current_rank]].area == node[iChild].area)
+// 			{
+// 				levelroot[current_rank] = iChild;
+// #if DELAYED_NODE_ALLOC
+// 				curSize--;
+// 				//memset((uint8*)(node + curSize), 0, sizeof(AlphaNode));
+// #endif
+// 			}
+
+			queue->pop();
+			next_rank = queue->top_idx();
+
+			//Redundant node removal
+			if (node[iChild].parentidx == current_rank &&
+				node[iChild].area == node[current_rank].area)
+				current_rank = iChild;
+
+			connectNode2Node(current_rank, next_rank, rankinfo[next_rank].alpha);
+			// #if DELAYED_NODE_ALLOC
+			// 			connectNode2Node(current_rank, next_rank, rankinfo[current_rank].alpha);
+			// #else
+			// 			connectNode2Node(node + levelroot[next_rank], levelroot[next_rank], node + levelroot[current_rank]);
+			//#endif
+			if (node[next_rank].area == imgsize)
+			{
+				if (node[current_rank].area == imgsize)
+					next_rank = current_rank;
+				node[next_rank].parentidx = next_rank;
+				break;
+			}
+
+			iChild = current_rank;
+			current_rank = next_rank;
+		}
+
+		curSize = 0;
+		for (p = 0; p < nredges; p++)
+		{
+			if (node[p].parentidx > 0)
+				curSize++;
+		}
+
+		q = nredges;
+		for (p = 0; p < imgsize; p++)
+		{
+			if (node[parentAry[p]].level)//Singleton 0-CC
+			{
+				(&node[q])->set(1, 0, (double)img[p], img[p], img[p]);
+				node[q++].parentidx = parentAry[p];
+				parentAry[p] = q;
+				curSize++;
+			}
+		}
+
+
+		//		delete hqueue;
+		delete queue;
+		Free(rank);
+		Free(rankinfo);
+		//Free(rank2alpha);
+//		Free(levelroot);
+		Free(isVisited);
+		Free(isAvailable);
+	}
+
 public:
 	Imgidx maxSize;
 	Imgidx curSize;
@@ -1377,7 +1611,7 @@ public:
 	~AlphaTree() { if (node) { Free(node); Free(parentAry); } }
 	inline void clear() { Free(node); Free(parentAry); node = NULL; parentAry = NULL; curSize = 0; }
 
-	void BuildAlphaTree(Pixel *img, Imgidx height, Imgidx width, Imgidx channel, Imgidx connectivity)
+	void BuildAlphaTree(Pixel *img, Imgidx height, Imgidx width, Imgidx channel, Imgidx connectivity, int8 algorithm)
 	{
 		this->height = height;
 		this->width = width;
@@ -1392,7 +1626,12 @@ public:
 		if(sizeof(Pixel) == 1)
 			Flood_HQueue(img);
 		else
-			//Flood_Trie(img);
-			Flood_HybridQueue(img);
+		{
+			if(algorithm)
+				Flood_HybridQueue(img);
+			else
+				Flood_HybridQueue_1(img); //Flood_Trie(img);
+		}			
+
 	}
 };
