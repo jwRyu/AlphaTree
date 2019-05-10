@@ -130,6 +130,7 @@
     <ClInclude Include="defines.h" />
     <ClInclude Include="HQueue.h" />
     <ClInclude Include="HybridQueue.h" />
+    <ClInclude Include="HybridQueue1.h" />
     <ClInclude Include="Trie.h" />
   </ItemGroup>
   <ItemGroup>

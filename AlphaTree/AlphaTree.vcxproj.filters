@@ -33,6 +33,9 @@
     <ClInclude Include="Trie.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="HybridQueue1.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

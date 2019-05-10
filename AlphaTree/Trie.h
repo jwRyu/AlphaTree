@@ -19,9 +19,12 @@ class Trie
 // 	//tmptmptmp
 // 	ofstream f;
 
+
+	//int32 curSize;//tmp
 public:
 	Trie(Imgidx triesize)
 	{
+		//curSize = 0;//tmp
 		Imgidx size;
 		shamt = 2;
 		for (int8 nbyte = sizeof(Trieidx); nbyte; nbyte >>= 1)
@@ -29,12 +32,12 @@ public:
 		mask_field = (1 << shamt) - 1;
 		mask_msb = 1 << (shamt - 1);
 		numlevels = 1;
-		for (size = triesize >> shamt; size; size >>= shamt)
+		for (size = (triesize + 1) >> shamt; size; size >>= shamt)
 			numlevels++;
 		
 		trie = (Trieidx**)Malloc(sizeof(Trieidx*) * numlevels);
 		//levelsize = (Imgidx*)Malloc(sizeof(Imgidx) * numlevels);
-		size = triesize;
+		size = triesize + 1;
 		for (int8 i = 0; i < numlevels; i++)
 		{
 			size >>= shamt;
@@ -44,6 +47,8 @@ public:
 			//levelsize[i] = lvlsz;
 		}
 		minidx = triesize;
+		//push(triesize);
+		//curSize = 1;
 		//curSize = 0;
 		//tmp!
 // 		f.open("C:/Users/jwryu/Google Drive/RUG/2019/AlphaTree_Trie/trie0rrr.dat",std::ofstream::out);
@@ -63,13 +68,21 @@ public:
 	inline Imgidx min_incidence() { return minidx & 1; }
 	inline void push(Imgidx in, int8 incidence)
 	{
-		Imgidx n, s_in, shamt1;
+		//curSize++; //tmp
+		//tmp
+/*		f << '0' << '\n' << in << endl;*/
+		push((in << 1) + incidence);
+	}
+	inline void push(Imgidx in)
+	{
+		Imgidx n = in, s_in, shamt1;
 		Trieidx *p;
 
+//		curSize++; //tmp
 		//tmp
 /*		f << '0' << '\n' << in << endl;*/
 
-		n = (in << 1) + incidence;
+		//n = (in << 1) + incidence;
 		s_in = n >> shamt;
 
 		if (n < minidx)
@@ -82,8 +95,8 @@ public:
 		{
 			p = &(trie[i][s_in]);
 			shamt1 = n & mask_field;
- 			//if (((*p) >> shamt1) & 1)
- 				//break;
+			//if (((*p) >> shamt1) & 1)
+				//break;
 			*p = *p | ((Trieidx)1 << shamt1);
 			n = s_in;
 			s_in >>= shamt;
@@ -95,6 +108,7 @@ public:
 		Trieidx *p, tmp;
 		int8 lvl;
 
+		//curSize--;//tmp
 // 		//tmp
 // 		f << '1' << '\n' << (minidx>>1) << endl;
 
