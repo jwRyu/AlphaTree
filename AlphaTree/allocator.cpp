@@ -1,7 +1,33 @@
 #include <cstdlib>
 #include "defines.h"
 
-size_t memuse, max_memuse;
+size_t memuse, max_memuse, memary_size;
+
+void *memary;
+
+void Preallocate(size_t size)
+{
+	memary_size = size;
+	memary = calloc(size, 1);
+	memuse = 0;
+	//max_memuse = 0;
+}
+
+void* Malloc(size_t size)
+{
+	void* cur = (void*)((char*)memary + memuse);
+	memuse += size;
+	//max_memuse = max(memuse, max_memuse);
+	return cur;
+}
+
+void Free()
+{
+	free(memary);
+}
+
+
+/*
 
 void* Malloc(size_t size)
 {
@@ -36,3 +62,4 @@ void Free(void* ptr)
 	memuse -= size;
 	free((void*)((size_t*)ptr - 1));
 }
+*/

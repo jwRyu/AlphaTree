@@ -11,7 +11,15 @@ class HQueue
 public:
 	int64 qsize;
 	int16 min_level;
-	HQueue(uint64 qsize, Imgidx *dhist, int16 numlevels)
+	HQueue()
+	{
+
+	}
+	~HQueue()
+	{
+		
+	}
+	void new_HQueue(uint64 qsize, Imgidx *dhist, int16 numlevels)
 	{
 		queue = (Imgidx*)Malloc((size_t)qsize * sizeof(Imgidx));
 		bottom = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx));
@@ -29,12 +37,12 @@ public:
 		bottom[numlevels] = 0;
 		cur[numlevels] = 1;
 	}
-	~HQueue()
-	{
-		Free(queue);
-		Free(bottom);
-		Free(cur);
-	}
+// 	void delete_HQueue()
+// 	{
+// 		Free(queue);
+// 		Free(bottom);
+// 		Free(cur);
+// 	}
 
 	inline void push(Imgidx pidx, int16 level)
 	{

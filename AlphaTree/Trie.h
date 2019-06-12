@@ -5,6 +5,8 @@
 // #include <fstream>
 // using namespace std;
 
+#define TRIE_DEBUG 0
+
 
 template<class Imgidx, class Trieidx>
 class Trie
@@ -12,10 +14,15 @@ class Trie
 	Imgidx minidx;
 	Trieidx **trie;
 	//Imgidx *levelsize;
-	Imgidx triesize, mask_field, mask_msb;
+	Imgidx triesize, mask_field, nbits;
 	int8 shamt, numlevels;
 	//delayed non-leaf node push
 		
+#if TRIE_DEBUG
+	Imgidx cursize;
+#endif
+
+
 // 	//tmptmptmp
 // 	ofstream f;
 
@@ -24,13 +31,16 @@ class Trie
 public:
 	Trie(Imgidx triesize)
 	{
+#if TRIE_DEBUG
+		cursize = 0;
+#endif
 		//curSize = 0;//tmp
 		Imgidx size;
 		shamt = 2;
 		for (int8 nbyte = sizeof(Trieidx); nbyte; nbyte >>= 1)
 			shamt++;
-		mask_field = (1 << shamt) - 1;
-		mask_msb = 1 << (shamt - 1);
+		nbits = 1 << shamt;
+		mask_field = nbits - 1;
 		numlevels = 1;
 		for (size = (triesize + 1) >> shamt; size; size >>= shamt)
 			numlevels++;
@@ -101,6 +111,9 @@ public:
 			n = s_in;
 			s_in >>= shamt;
 		}
+#if TRIE_DEBUG
+		cursize++;
+#endif
 	}
 	inline void pop()
 	{
@@ -136,6 +149,9 @@ public:
 				tmp >>= 1;
 			minidx |= shamt1;
 		}
+#if TRIE_DEBUG
+		cursize--;
+#endif
 	}
 };
 
