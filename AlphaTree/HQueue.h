@@ -11,13 +11,13 @@ class HQueue
 public:
 	int64 qsize;
 	int16 min_level;
-	HQueue(uint64 qsize, Imgidx *dhist, int16 numlevels)
+	HQueue(uint64 qsize_in, Imgidx *dhist, int16 numlevels)
 	{
-		queue = (Imgidx*)Malloc((size_t)qsize * sizeof(Imgidx));
+		queue = (Imgidx*)Malloc((size_t)qsize_in * sizeof(Imgidx));
 		bottom = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx));
 		cur = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx));
 
-		qsize = qsize;
+		qsize = qsize_in;
 		min_level = numlevels - 1;
 
 		Imgidx sum_hist = 0;
@@ -141,5 +141,3 @@ inline void hqueue_push(HQueue<neighidx>* hqueue, uint32 idx, uint8 neighbor, ui
 void hqueue_new(HQueue<uint32>** hqueue, uint64 qsize, uint32 *dhist, uint32 dhistsize);
 void hqueue_new(HQueue<neighidx>** hqueue, uint64 qsize, uint32 *dhist, uint32 dhistsize, uint8 neighbours);
 */
-
-

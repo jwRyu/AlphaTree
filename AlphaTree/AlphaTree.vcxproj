@@ -116,6 +116,7 @@
       <AdditionalIncludeDirectories>C:\opencv3.4.3\build\include</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -130,7 +131,6 @@
     <ClInclude Include="defines.h" />
     <ClInclude Include="HQueue.h" />
     <ClInclude Include="HybridQueue.h" />
-    <ClInclude Include="HybridQueue1.h" />
     <ClInclude Include="Trie.h" />
   </ItemGroup>
   <ItemGroup>

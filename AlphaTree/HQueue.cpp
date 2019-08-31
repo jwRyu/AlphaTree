@@ -1,6 +1,4 @@
-#include "defines.h"
-#include "HQueue.h"
-#include "allocator.h"
+
 /*
 void hqueue_new(HQueue<uint32>** hqueue, uint64 qsize, uint32 *dhist, uint32 dhistsize)
 {

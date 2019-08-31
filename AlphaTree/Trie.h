@@ -1,9 +1,8 @@
 #pragma once
+
 #include "allocator.h"
-// 
-// //tmptmptmptmpt tmp
-// #include <fstream>
-// using namespace std;
+
+#define TRIE_DEBUG 0
 
 
 template<class Imgidx, class Trieidx>
@@ -12,33 +11,42 @@ class Trie
 	Imgidx minidx;
 	Trieidx **trie;
 	//Imgidx *levelsize;
-	Imgidx triesize, mask_field, mask_msb;
+	Imgidx triesize, mask_field, nbits;
 	int8 shamt, numlevels;
 	//delayed non-leaf node push
-		
-// 	//tmptmptmp
-// 	ofstream f;
+
+#if TRIE_DEBUG
+	Imgidx cursize;
+#endif
 
 
-	//int32 curSize;//tmp
+	// 	//tmptmptmp
+	// 	ofstream f;
+
+
+		//int32 curSize;//tmp
 public:
-	Trie(Imgidx triesize)
+	Trie(Imgidx triesize_in)
 	{
+#if TRIE_DEBUG
+		cursize = 0;
+#endif
 		//curSize = 0;//tmp
+		triesize = triesize_in;
 		Imgidx size;
 		shamt = 2;
 		for (int8 nbyte = sizeof(Trieidx); nbyte; nbyte >>= 1)
 			shamt++;
-		mask_field = (1 << shamt) - 1;
-		mask_msb = 1 << (shamt - 1);
+		nbits = 1 << shamt;
+		mask_field = nbits - 1;
 		numlevels = 1;
 		for (size = (triesize + 1) >> shamt; size; size >>= shamt)
 			numlevels++;
-		
+
 		trie = (Trieidx**)Malloc(sizeof(Trieidx*) * numlevels);
 		//levelsize = (Imgidx*)Malloc(sizeof(Imgidx) * numlevels);
 		size = triesize + 1;
-		for (int8 i = 0; i < numlevels; i++)
+		for (int16 i = 0; i < numlevels; i++)
 		{
 			size >>= shamt;
 			trie[i] = (Trieidx*)Malloc(sizeof(Trieidx) * (size + 1));
@@ -56,11 +64,11 @@ public:
 	}
 	~Trie()
 	{
-		for (int8 i = 0; i < numlevels; i++)
+		for (int16 i = 0; i < numlevels; i++)
 			Free(trie[i]);
 		Free(trie);
-		
-// 		f.close();//tmptmp
+
+		// 		f.close();//tmptmp
 	}
 
 	inline Imgidx top() { return minidx; }
@@ -78,11 +86,11 @@ public:
 		Imgidx n = in, s_in, shamt1;
 		Trieidx *p;
 
-//		curSize++; //tmp
-		//tmp
-/*		f << '0' << '\n' << in << endl;*/
+		//		curSize++; //tmp
+				//tmp
+		/*		f << '0' << '\n' << in << endl;*/
 
-		//n = (in << 1) + incidence;
+				//n = (in << 1) + incidence;
 		s_in = n >> shamt;
 
 		if (n < minidx)
@@ -91,7 +99,7 @@ public:
 		*p = *p | ((Trieidx)1 << (n & mask_field));
 		n = s_in;
 		s_in >>= shamt;
-		for (int8 i = 1; i < numlevels; i++)
+		for (int16 i = 1; i < numlevels; i++)
 		{
 			p = &(trie[i][s_in]);
 			shamt1 = n & mask_field;
@@ -101,12 +109,15 @@ public:
 			n = s_in;
 			s_in >>= shamt;
 		}
+#if TRIE_DEBUG
+		cursize++;
+#endif
 	}
 	inline void pop()
 	{
 		Imgidx s_idx = minidx >> shamt, shamt1;
 		Trieidx *p, tmp;
-		int8 lvl;
+		int16 lvl;
 
 		//curSize--;//tmp
 // 		//tmp
@@ -136,6 +147,8 @@ public:
 				tmp >>= 1;
 			minidx |= shamt1;
 		}
+#if TRIE_DEBUG
+		cursize--;
+#endif
 	}
 };
-
