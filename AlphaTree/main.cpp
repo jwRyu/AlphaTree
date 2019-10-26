@@ -19,7 +19,7 @@
 #include "Trie.h"
 using namespace std;
 
-#define OUTPUT_FNAME "D:/RUG/2019/TTMA_ISMM/tmp.dat"
+#define OUTPUT_FNAME "D:/RUG/2019/TTMA_ISMM/pilot_test_PQ.dat"
 //#define OUTPUT_FNAME "C:/Users/jwryu/Google Drive/RUG/2019/AlphaTree_Trie/tmptmptmp.dat"
 
 #define INPUTIMAGE_DIR	"D:/RUG/2018/AlphaTree/imgdata/Grey"
@@ -80,6 +80,19 @@ void RandomizedHDRimage(uint32* hdrimg, uint8* ldrimg, int64 imgsize, int8 bit_d
 		pix |= ((uint32)(rand() & 0xff) << 8);
 		pix |= ((uint32)(rand() & 0xff));
 		pix >>= 32 - bit_depth;
+		hdrimg[i] = pix;
+	}
+}
+
+void RandomizedHDRimage(uint16* hdrimg, uint8* ldrimg, int64 imgsize, int8 bit_depth)
+{
+	uint32 pix;
+
+	for (int64 i = 0; i < imgsize; i++)
+	{
+		pix = ((uint32)ldrimg[i]) << 8;
+		pix |= ((uint32)(rand() & 0xff));
+		pix >>= 16 - bit_depth;
 		hdrimg[i] = pix;
 	}
 }
@@ -163,141 +176,192 @@ int main(int argc, char **argv)
 	double time_elapsed = 0;
 	double pixels_processed = 0;
 	uint8 testimg[4 * 4] = { 4, 4, 2, 0, 4, 1, 1, 0, 0, 3, 0, 0, 2, 2, 0, 5 };
-	uint32 *hdrimg;
+	uint64 *hdrimg64;
+	uint32 *hdrimg32;
+	uint16 *hdrimg16;
 	int8 bit_depth;
 	char fname[128];
-
 	contidx = 0;
 	//f.open("C:/Users/jwryu/RUG/2018/AlphaTree/AlphaTree_grey_Exp.dat", std::ofstream::app);
 
 
-	for (bit_depth = 32; bit_depth <= 32; bit_depth++)
+	
+	sprintf(fname, "%s.dat", OUTPUT_FNAME);
+	//sprintf(fname, "%s%d.dat", OUTPUT_FNAME, bit_depth);
+	fcheck.open(fname);
+	if(fcheck.good())
 	{
-		sprintf(fname, "%s%d.dat", OUTPUT_FNAME, bit_depth);
-		fcheck.open(fname);
-		if (fcheck.good())
+		cout << "Output file \"" << fname << "\" already exists. Overwrite? (y/n/a)";
+		cin >> in;
+		//in = 'y';
+		if (in == 'a')
 		{
-			cout << "Output file \"" << fname << "\" already exists. Overwrite? (y/n/a)";
-			cin >> in;
-			//in = 'y';
-			if (in == 'a')
-			{
-				f.open(fname, std::ofstream::app);
-				cout << "Start from : ";
-				cin >> contidx;
-			}
-			else if (in == 'y')
-				f.open(fname);
-			else
-				exit(-1);
+			f.open(fname, std::ofstream::app);
+			cout << "Start from : ";
+			cin >> contidx;
 		}
-		else
+		else if (in == 'y')
 			f.open(fname);
-
-//		for (mem_scheme = 0; mem_scheme < 4; mem_scheme++) // memory scheme loop (TSE, Max, Linear, Exp)
+		else
+			exit(-1);
+	}
+	else
+		f.open(fname);
+	//alg - 0:hqueue 1:PQ 2:trie 3:hybqueue
+	for (int algorithm = 1; algorithm < 3; algorithm++)
+	{
+		int bit_depth_lim = 32;
+		if (algorithm < 1)
+			bit_depth_lim = 22;
+		//if (algorithm == 1)//pq doesn't work!
+		//	continue;
+		for (bit_depth = 8; bit_depth <= bit_depth_lim; bit_depth++)
 		{
+			cnt = 0;
+			printf("%d=======Bit depth: %d\n", algorithm, bit_depth);
+			//		for (mem_scheme = 0; mem_scheme < 4; mem_scheme++) // memory scheme loop (TSE, Max, Linear, Exp)
+			{
 #if RUN_TSE_ONLY
-			if (mem_scheme > 0)
-				break;
+				if (mem_scheme > 0)
+					break;
 #endif
 #if RUN_MAX_ONLY
-			if (mem_scheme > 1)
-				break;
-			mem_scheme = 1;
+				if (mem_scheme > 1)
+					break;
+				mem_scheme = 1;
 #endif
-			for (i = 0; i < 2; i++) // grey, colour loop
-			{
-				if (i == 0)
-					path = INPUTIMAGE_DIR;
-				else
-					path = INPUTIMAGE_DIR_COLOUR;
-
-				for (auto & p : std::experimental::filesystem::directory_iterator(path))
+				for (i = 0; i < 2; i++) // grey, colour loop
 				{
-					if (++cnt < contidx)
-					{
-						cout << cnt << ": " << p << endl;
-						continue;
-					}
-					if (cnt > 1246)
-						break;
-					cv::String str1(p.path().string().c_str());
-					cv::Mat cvimg;
 					if (i == 0)
-						cvimg = imread(str1, cv::IMREAD_GRAYSCALE);
+						path = INPUTIMAGE_DIR;
 					else
+						path = INPUTIMAGE_DIR_COLOUR;
+
+					for (auto & p : std::experimental::filesystem::directory_iterator(path))
 					{
-						cvimg = imread(str1, cv::IMREAD_COLOR);
-						cv::cvtColor(cvimg, cvimg, CV_BGR2GRAY);
-					}
+						cnt++;
+						if(cnt > 1246 || (algorithm == 1 && bit_depth < 20 || (algorithm == 1 && bit_depth == 20 && cnt <= 1225)))
+						//if (++cnt < contidx)
+						//if(0)
+						{
+							//cout << (int)algorithm << " " << (int)bit_depth << " " << (int)cnt << ": " << p << endl;
+							continue;
+						}
+						if(0)// ((i == 0 && cnt > 2) || (i == 1 && cnt > 5))
+						{
+							cnt--;
+							break;
+						}
+						cv::String str1(p.path().string().c_str());
+						cv::Mat cvimg;
+						if (i == 0)
+							cvimg = imread(str1, cv::IMREAD_GRAYSCALE);
+						else
+						{
+							cvimg = imread(str1, cv::IMREAD_COLOR);
+							cv::cvtColor(cvimg, cvimg, CV_BGR2GRAY);
+						}
 
-					/*
-					cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);// Create a window for display.
-					cv::imshow("Display window", cvimg);                   // Show our image inside it.
-					cv::waitKey(0);
-					getc(stdin);
-					*/
-
-					height = cvimg.rows;
-					width = cvimg.cols;
-					channel = cvimg.channels();
-
-					hdrimg = (uint32*)malloc(width * height * sizeof(uint32));
-					RandomizedHDRimage(hdrimg, (uint8*)(cvimg.data), height * width, (int8)bit_depth);
-
-					cout << cnt << ": " << str1 << ' ' << height << 'x' << width << endl;
-
-					if (channel != 1)
-					{
-						cout << "input should be a greyscale image" << endl;
+						/*
+						cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE);// Create a window for display.
+						cv::imshow("Display window", cvimg);                   // Show our image inside it.
+						cv::waitKey(0);
 						getc(stdin);
-						exit(-1);
-					}
+						*/
 
-					double runtime, minruntime;
-					for (int testrep = 0; testrep < REPEAT; testrep++)
-					{
-						memuse = max_memuse = 0;
-						auto wcts = std::chrono::system_clock::now();
+						height = cvimg.rows;
+						width = cvimg.cols;
+						channel = cvimg.channels();
 
-						tree = new AlphaTree;// (AlphaTree*)Malloc(sizeof(AlphaTree));
-						//		start = clock();
+						if (bit_depth > 8)
+						{
+							if (bit_depth > 32)
+							{
+								hdrimg64 = (uint64*)malloc(width * height * sizeof(uint64)) ;
+								RandomizedHDRimage(hdrimg32, (uint8*)(cvimg.data), height * width, (int8)bit_depth);
+							}
+							if (bit_depth > 16)
+							{
+								hdrimg32 = (uint32*)malloc(width * height * sizeof(uint32));
+								RandomizedHDRimage(hdrimg32, (uint8*)(cvimg.data), height * width, (int8)bit_depth);
+							}
+							else
+							{
+								hdrimg16 = (uint16*)malloc(width * height * sizeof(uint16));
+								RandomizedHDRimage(hdrimg16, (uint8*)(cvimg.data), height * width, (int8)bit_depth);
+							}
+						}
 
-						//BuildAlphaTree(tree, cvimg.data, height, width, channel);
-						
-						tree->BuildAlphaTree(hdrimg, height, width, channel, 4, 0);
-	//					BuildAlphaTree(tree, hdrimg, height, width, channel, bit_depth);
+						cout << cnt << ": " << str1 << ' ' << height << 'x' << width << endl;
+
+						if (channel != 1)
+						{
+							cout << "input should be a greyscale image" << endl;
+							getc(stdin);
+							exit(-1);
+						}
+
+						pixels_processed = 0;
+						double runtime, minruntime;
+						for (int testrep = 0; testrep < REPEAT; testrep++)
+						{
+							memuse = max_memuse = 0;
+							auto wcts = std::chrono::system_clock::now();
+
+							tree = new AlphaTree(bit_depth);// (AlphaTree*)Malloc(sizeof(AlphaTree));
+							//		start = clock();
+
+							if (bit_depth > 8)
+							{
+
+								if (bit_depth > 32)	tree->BuildAlphaTree(hdrimg64, height, width, channel, 4, algorithm);
+								if (bit_depth > 16)	tree->BuildAlphaTree(hdrimg32, height, width, channel, 4, algorithm);
+								else				tree->BuildAlphaTree(hdrimg16, height, width, channel, 4, algorithm);
+							}
+							else
+								tree->BuildAlphaTree(cvimg.data, height, width, channel, 4, algorithm);
+							//tree->BuildAlphaTree(testimg, 4, 4, 1, 4, 0);
+
+	//					
+						//BuildAlphaTree(tree, hdrimg, height, width, channel, bit_depth);
 						//BuildAlphaTree(tree, testimg, 4, 4, 1);
 
-						std::chrono::duration<double> wctduration = (std::chrono::system_clock::now() - wcts);
-						runtime = wctduration.count();
-						minruntime = testrep == 0 ? runtime : min(runtime, minruntime);
+							std::chrono::duration<double> wctduration = (std::chrono::system_clock::now() - wcts);
+							runtime = wctduration.count();
+							minruntime = testrep == 0 ? runtime : min(runtime, minruntime);
 
-						if (testrep < (REPEAT - 1))
-							delete tree;
+							if (testrep < (REPEAT - 1))
+								delete tree;
+						}
+
+						pixels_processed = width * height;
+						time_elapsed = minruntime;
+
+						cvimg.release();
+						f << p.path().string().c_str() << '\t' << algorithm << '\t' << (int)bit_depth << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << tree->get_nrmsd() << '\t' << tree->get_maxSize()
+							<< '\t' << tree->get_curSize() << '\t' << minruntime << '\t' << 0 << endl;
+						//f << p.path().string().c_str() << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << nrmsd << '\t' << tree->maxSize
+						//	<< '\t' << tree->curSize << '\t' << minruntime << '\t' << mem_scheme << endl;
+						cout << (int)bit_depth << " Time Elapsed: " << minruntime << "# Nodes: " << tree->get_curSize() << " mean processing speed(Mpix/s): " << pixels_processed / (time_elapsed * 1000000) << endl;
+
+						str1.clear();
+						delete tree;
+						if (bit_depth > 8)
+						{
+							if      (bit_depth > 32)	free(hdrimg64);
+							else if (bit_depth > 16)	free(hdrimg32);
+							else						free(hdrimg16);
+						}
 					}
-
-					pixels_processed += width * height;
-					time_elapsed += minruntime;
-					
-					cvimg.release();
-					str1.clear();
-					delete tree;
-					f << p.path().string().c_str() << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << memuse << '\t' << tree->get_maxSize()
-						<< '\t' << tree->get_curSize() << '\t' << minruntime << '\t' << 0 << endl;
-					//f << p.path().string().c_str() << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << nrmsd << '\t' << tree->maxSize
-					//	<< '\t' << tree->curSize << '\t' << minruntime << '\t' << mem_scheme << endl;
-					cout << bit_depth << " Time Elapsed: " << minruntime << "# Nodes: " << tree->get_curSize() << " mean processing speed(Mpix/s): " << pixels_processed / (time_elapsed * 1000000) << endl;
-
-					free(hdrimg);
 				}
 			}
-		}
 
-		cnt = 0;
-		f.close();
-		contidx = 0;
+			cnt = 0;
+			contidx = 0;
+			f.flush();
+		}
 	}
+	f.close();
 
 	return 0;
 }

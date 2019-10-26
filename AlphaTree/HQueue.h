@@ -10,34 +10,36 @@ class HQueue
 	Imgidx *bottom, *cur;
 public:
 	int64 qsize;
-	int16 min_level;
-	HQueue(uint64 qsize_in, Imgidx *dhist, int16 numlevels)
+	int64 min_level;
+	HQueue(uint64 qsize_in, Imgidx *dhist, int32 numlevels)
 	{
-		queue = (Imgidx*)Malloc((size_t)qsize_in * sizeof(Imgidx));
-		bottom = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx));
-		cur = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx));
+		//tmp
+		queue = (Imgidx*)Malloc((size_t)qsize_in * sizeof(Imgidx), 1);
+		bottom = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx), 1);
+		cur = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx), 1);
 
-		qsize = qsize_in;
-		min_level = numlevels - 1;
 
-		Imgidx sum_hist = 0;
-		for (int32 i = 0; i < numlevels; i++)
-		{
-			bottom[i] = cur[i] = sum_hist;
-			sum_hist += dhist[i];
-		}
-		bottom[numlevels] = 0;
-		cur[numlevels] = 1;
+// 		qsize = qsize_in;
+// 		min_level = numlevels - 1;
+// 
+// 		Imgidx sum_hist = 0;
+// 		for (int32 i = 0; i < numlevels; i++)
+// 		{
+// 			bottom[i] = cur[i] = sum_hist;
+// 			sum_hist += dhist[i];
+// 		}
+// 		bottom[numlevels] = 0;
+// 		cur[numlevels] = 1;
 	}
 	~HQueue()
 	{
-		Free(queue);
-		Free(bottom);
-		Free(cur);
+		Free(queue, 1);
+		Free(bottom, 1);
+		Free(cur, 1);
 	}
 
-	inline void push(Imgidx pidx, int16 level)
-	{
+	inline void push(Imgidx pidx, int64 level)
+	{	
 		min_level = min(level, min_level);
 #if DEBUG
 		assert(level < max_level);

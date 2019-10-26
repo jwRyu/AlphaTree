@@ -131,6 +131,7 @@
     <ClInclude Include="defines.h" />
     <ClInclude Include="HQueue.h" />
     <ClInclude Include="HybridQueue.h" />
+    <ClInclude Include="PriorityQueue.h" />
     <ClInclude Include="Trie.h" />
   </ItemGroup>
   <ItemGroup>
@@ -139,6 +140,7 @@
     <ClCompile Include="HQueue.cpp" />
     <ClCompile Include="HybridQueue.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PriorityQueue.cpp" />
     <ClCompile Include="Trie.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
