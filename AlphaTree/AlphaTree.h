@@ -1031,6 +1031,259 @@ class ATree
 		Free(isAvailable);
 	}
 
+// 
+// 	void Flood_HQueue_UnionbyRank(Pixel* img)
+// 	{
+// 		Imgidx imgsize, dimgsize, nredges;
+// 		Imgidx current_rank, next_rank;
+// 		HybridQueue_hq<Imgidx, trieidx> *queue;
+// 		//HQueue_ubr<Imgidx> *queue;
+// 		RankItem<Imgidx, Pixel> *rankinfo, *pRank;
+// 		AlphaNode<Imgidx, Pixel> *pNode;
+// 		Pixel maxpixval;
+// 		Imgidx *rank, top_rank;
+// 		int8 nbits;
+// 
+// 		Imgidx *dhist;
+// 
+// 		Imgidx iChild;
+// 		uint8 *isVisited, /**isVisited_edges,*/ *isAvailable, isAv;
+// 		Imgidx p, q, wstride_d = width << 2, wstride0 = width + 1, wstride1 = width - 1;
+// 
+// 		imgsize = width * height;
+// 		nredges = width * (height - 1) + (width - 1) * height + ((connectivity == 8) ? ((width - 1) * (height - 1) * 2) : 0);
+// 		dimgsize = (connectivity >> 1) * width * height;
+// 
+// 		rankinfo = (RankItem<Imgidx, Pixel>*)Malloc(nredges * sizeof(RankItem<Imgidx, Pixel>));
+// 		rank = (Imgidx*)Malloc((size_t)dimgsize * sizeof(Imgidx));
+// 		//rank2alpha = (Pixel*)Malloc((size_t)nredges * sizeof(Pixel));
+// 		//levelroot = (Imgidx*)Malloc((Imgidx)(nredges + 1) * sizeof(Imgidx));
+// 		isVisited = (uint8*)Malloc((size_t)((imgsize)));
+// 		//isVisited_edges = (uint8*)Malloc((size_t)((nredges)));
+// 		if (connectivity == 4)
+// 			isAvailable = (uint8*)Malloc((size_t)((imgsize + 1) >> 1));
+// 		else
+// 			isAvailable = (uint8*)Malloc((size_t)(imgsize));
+// 
+// 		//	levelroot[p] = NULL_LEVELROOT;
+// 		//levelroot[nredges] = NODE_CANDIDATE; //
+// 		memset(isVisited, 0, (size_t)((imgsize)));
+// 		//		memset(isVisited_edges, 0, (size_t)((nredges)));
+// 		init_isAvailable(isAvailable);
+// 
+// 		//	std::cout << "before:" << rankinfo->alpha << std::endl;
+// 	//		std::cout << "before: " << rankinfo << " " << rankinfo[0].alpha << std::endl;
+// 		compute_dimg(rank, rankinfo, img);
+// 
+// 		//std::cout << "after:" << rankinfo->alpha << std::endl;
+// //		std::cout << "after: " << rankinfo << " " << rankinfo[0].alpha << std::endl;
+// 
+// 		queue = new HybridQueue_hq<Imgidx, trieidx>(nredges + 1,64);
+// //		queue = new HQueue_ubr<Imgidx>(nredges + 1);
+// 
+// //		queue = new HybridQueue<Imgidx, trieidx>(nredges, listsize);
+// 
+// 				//trie = new Trie<Imgidx, trieidx>(nredges << 1);
+// 				//trie->push(nredges, 0);
+// 
+// 
+// 
+// 		// 		//tree size estimation (TSE)
+// 		//
+// 
+// 		Pixel r = rankinfo[0].alpha, s;
+// 		Imgidx count = 1;
+// 		nrmsd = 0;
+// 		for (p = 1; p < nredges; p++)
+// 		{
+// 			s = rankinfo[p].alpha;
+// 			if (r != s)
+// 			{
+// 				nrmsd += ((double)count) * ((double)count);
+// 				r = s;
+// 				count = 1;
+// 			}
+// 			else
+// 				count++;
+// 		}
+// 
+// 		nrmsd = sqrt((nrmsd - (double)nredges) / ((double)nredges * ((double)nredges - 1.0)));
+// 		//maxSize = min(imgsize, (Imgidx)(imgsize * A * (exp(SIGMA * nrmsd) + B + M)));
+// 		// 		//maxSize = imgsize;
+// 		// 		Free(dhist);
+// 		maxSize = imgsize + nredges;
+// 		//maxSize = nredges;
+// 		num_node = maxSize;
+// 		num_node_in = nredges;
+// 
+// 		parentAry = (Imgidx*)Malloc((size_t)imgsize * sizeof(int32));
+// 		node = (AlphaNode<Imgidx, Pixel>*)Malloc((size_t)maxSize * sizeof(AlphaNode<Imgidx, Pixel>));
+// 		node_in = node + imgsize;
+// 
+// 		for (pNode = node, p = 0; pNode < node_in; pNode++, p++)
+// 			pNode->set(1, 0, (double)img[p], img[p], img[p]);
+// 
+// 		nbits = ((sizeof(Pixel) << 3) - 1);
+// 		maxpixval = ~(1 << nbits);
+// 		for (pRank = rankinfo; pNode < node + maxSize; pNode++, pRank++)
+// 			pNode->set(0, pRank->alpha, 0.0, maxpixval, 0);
+// 		//inline void set(Imgidx area_in, Pixel level, double sumPix_in, Pixel minPix_in, Pixel maxPix_in)
+// 
+// 		isVisited[0] = 1;
+// 		if (connectivity == 4)
+// 		{
+// 			queue->push(rank[0]);
+// 			queue->push(rank[1]);
+// 		}
+// 		else
+// 		{
+// 			queue->push(rank[1]);
+// 			queue->push(rank[2]);
+// 			queue->push(rank[3]);
+// 		}
+// 
+// 		current_rank = queue->top();
+// 		node[0].connect_to_parent(&node_in[current_rank], current_rank + imgsize);
+// 		//isVisited_edges[current_rank] = 1;
+// 		iChild = current_rank;
+// 
+// 		int num_visit = 0;
+// 
+// 		while (1)//(current_rank <= nredges)
+// 		{
+// 			while (1)//((trie->top() >> 1) <= current_rank)
+// 			{
+// 				top_rank = queue->top();	//remove tmp variables later if possible
+// 			//	if (isVisited_edges[top_rank])
+// 			//		break;
+// 				pRank = rankinfo + top_rank;
+// 				if (isVisited[pRank->p])
+// 				{
+// 					if (isVisited[pRank->q])
+// 						break;
+// 					p = pRank->q;
+// 				}
+// 				else
+// 					p = pRank->p;
+// 				
+// // 				num_visit++;
+// // 				if(num_visit > imgsize - 1000 || num_visit%5000 == 0)
+// // 				std::cout << "num_visit = (" << ++num_visit << "/" << imgsize << ")" << std::endl;
+// 				isVisited[p] = 1;
+// #if !HQUEUE_COST_AMORTIZE
+// 				//find_min_level();
+// #endif
+// 				if (connectivity == 4)
+// 				{
+// 					isAv = get_field(isAvailable, p);
+// 					q = p << 1;
+// 
+// 					if (is_available(isAv, 0) && !isVisited[p + width])
+// 						queue->push(rank[q]);
+// 					if (is_available(isAv, 1) && !isVisited[p + 1])
+// 						queue->push(rank[q + 1]);
+// 					if (is_available(isAv, 2) && !isVisited[p - 1])
+// 						queue->push(rank[q - 1]);
+// 					if (is_available(isAv, 3) && !isVisited[p - width])
+// 						queue->push(rank[q - (width << 1)]);
+// 				}
+// 				else
+// 				{
+// 					isAv = isAvailable[p];
+// 					q = p << 2;
+// 
+// 					if (is_available(isAv, 0) && !isVisited[p + wstride1])
+// 						queue->push(rank[q]);
+// 					if (is_available(isAv, 1) && !isVisited[p + width])
+// 						queue->push(rank[q + 1]);
+// 					if (is_available(isAv, 2) && !isVisited[p + wstride0])
+// 						queue->push(rank[q + 2]);
+// 					if (is_available(isAv, 3) && !isVisited[p + 1])
+// 						queue->push(rank[q + 3]);
+// 					if (is_available(isAv, 4) && !isVisited[p - wstride1])
+// 						queue->push(rank[q - wstride_d + 4]);
+// 					if (is_available(isAv, 5) && !isVisited[p - width])
+// 						queue->push(rank[q - wstride_d + 1]);
+// 					if (is_available(isAv, 6) && !isVisited[p - wstride0])
+// 						queue->push(rank[q - wstride_d - 2]);
+// 					if (is_available(isAv, 7) && !isVisited[p - 1])
+// 						queue->push(rank[q - 1]);
+// 				}
+// 
+// 				next_rank = queue->top();
+// 				/*				if(p == 27579)
+// 								{
+// 									node[p].print(node);
+// 									node[5773602].print(node);
+// 									getchar();
+// 
+// 									disp = 0;
+// 								}
+// 								*/
+// 				node[p].connect_to_parent(&node_in[next_rank], next_rank + imgsize);
+// 
+// 				/*				disp = 0;
+// 								if(p == 27579)
+// 								{
+// 									node[p].print(node);
+// 									node_in[node[p].parentidx].print(node);
+// 									getchar();
+// 								}
+// 				*/
+// 				if (current_rank == next_rank)
+// 					break;
+// 				current_rank = next_rank;
+// 			}
+// 
+// 			queue->pop();
+// 			next_rank = queue->top();
+// 
+// 			//Redundant node removal
+// 			if (node_in[iChild].parentidx == current_rank &&
+// 				node_in[iChild].area == node_in[current_rank].area)
+// 				current_rank = iChild;
+// 
+// 			node_in[current_rank].connect_to_parent(&node_in[next_rank], next_rank);
+// 			if (node_in[next_rank].area == imgsize)
+// 			{
+// 				if (node_in[current_rank].area == imgsize)
+// 					next_rank = current_rank;
+// 				//				node_in[next_rank].parentidx = next_rank;
+// 				// node_in[next_rank].parentidx = -1;
+// 
+// 				break;
+// 			}
+// 
+// 			iChild = current_rank;
+// 			current_rank = next_rank;
+// 		}
+// 
+// 		Imgidx num_excessnodes = 0;
+// 		for (pNode = node_in; pNode < node + maxSize; pNode++)
+// 		{
+// 			pNode->parentidx += imgsize;
+// 			if (pNode->area == 0)
+// 				num_excessnodes++;
+// 		}
+// 		//num_excessnodes += num_danglingnodes;
+// 		node_in[next_rank].parentidx = -1;
+// 
+// 		//ratio_danglingnodes = (double)num_danglingnodes / (double)maxSize;
+// 		//ratio_excessnodes = (double)num_excessnodes / (double)nredges;
+// 
+// 
+// 		delete queue;
+// 		Free(rank);
+// 		Free(rankinfo);
+// 		//Free(rank2alpha);
+// //		Free(levelroot);
+// 		Free(isVisited);
+// 		//Free(isVisited_edges);
+// 		Free(isAvailable);
+// 	}
+
+
+
 	void Flood_PQueue(Pixel* img)
 	{
 		Imgidx imgsize, dimgsize, nredges, x0;
@@ -1206,6 +1459,250 @@ class ATree
 		Free(isVisited);
 		Free(isAvailable);
 	}
+
+	void Flood_PQueue_UnionbyRank(Pixel* img)
+	{
+		Imgidx imgsize, dimgsize, nredges;
+		Imgidx current_rank, next_rank;
+		PriorityQueue_ubr<Imgidx> *queue;
+		RankItem<Imgidx, Pixel> *rankinfo, *pRank;
+		AlphaNode<Imgidx, Pixel> *pNode;
+		Pixel maxpixval;
+		Imgidx *rank, top_rank;
+		int8 nbits;
+
+		Imgidx *dhist;
+
+		Imgidx iChild;
+		uint8 *isVisited, /**isVisited_edges,*/ *isAvailable, isAv;
+		Imgidx p, q, wstride_d = width << 2, wstride0 = width + 1, wstride1 = width - 1;
+
+		imgsize = width * height;
+		nredges = width * (height - 1) + (width - 1) * height + ((connectivity == 8) ? ((width - 1) * (height - 1) * 2) : 0);
+		dimgsize = (connectivity >> 1) * width * height;
+
+		rankinfo = (RankItem<Imgidx, Pixel>*)Malloc(nredges * sizeof(RankItem<Imgidx, Pixel>));
+		rank = (Imgidx*)Malloc((size_t)dimgsize * sizeof(Imgidx));
+		//rank2alpha = (Pixel*)Malloc((size_t)nredges * sizeof(Pixel));
+		//levelroot = (Imgidx*)Malloc((Imgidx)(nredges + 1) * sizeof(Imgidx));
+		isVisited = (uint8*)Malloc((size_t)((imgsize)));
+		//isVisited_edges = (uint8*)Malloc((size_t)((nredges)));
+		if (connectivity == 4)
+			isAvailable = (uint8*)Malloc((size_t)((imgsize + 1) >> 1));
+		else
+			isAvailable = (uint8*)Malloc((size_t)(imgsize));
+
+		//	levelroot[p] = NULL_LEVELROOT;
+		//levelroot[nredges] = NODE_CANDIDATE; //
+		memset(isVisited, 0, (size_t)((imgsize)));
+		//		memset(isVisited_edges, 0, (size_t)((nredges)));
+		init_isAvailable(isAvailable);
+
+		//	std::cout << "before:" << rankinfo->alpha << std::endl;
+	//		std::cout << "before: " << rankinfo << " " << rankinfo[0].alpha << std::endl;
+		compute_dimg(rank, rankinfo, img);
+
+		//std::cout << "after:" << rankinfo->alpha << std::endl;
+//		std::cout << "after: " << rankinfo << " " << rankinfo[0].alpha << std::endl;
+
+		queue = new PriorityQueue_ubr<Imgidx>(nredges + 1);
+		//queue = new Trie<Imgidx, trieidx>(nredges);
+		//		queue = new HybridQueue<Imgidx, trieidx>(nredges, listsize);
+
+				//trie = new Trie<Imgidx, trieidx>(nredges << 1);
+				//trie->push(nredges, 0);
+
+
+
+		// 		//tree size estimation (TSE)
+		//
+
+		Pixel r = rankinfo[0].alpha, s;
+		Imgidx count = 1;
+		nrmsd = 0;
+		for (p = 1; p < nredges; p++)
+		{
+			s = rankinfo[p].alpha;
+			if (r != s)
+			{
+				nrmsd += ((double)count) * ((double)count);
+				r = s;
+				count = 1;
+			}
+			else
+				count++;
+		}
+
+		nrmsd = sqrt((nrmsd - (double)nredges) / ((double)nredges * ((double)nredges - 1.0)));
+		//maxSize = min(imgsize, (Imgidx)(imgsize * A * (exp(SIGMA * nrmsd) + B + M)));
+		// 		//maxSize = imgsize;
+		// 		Free(dhist);
+		maxSize = imgsize + nredges;
+		//maxSize = nredges;
+		num_node = maxSize;
+		num_node_in = nredges;
+
+		parentAry = (Imgidx*)Malloc((size_t)imgsize * sizeof(int32));
+		node = (AlphaNode<Imgidx, Pixel>*)Malloc((size_t)maxSize * sizeof(AlphaNode<Imgidx, Pixel>));
+		node_in = node + imgsize;
+
+		for (pNode = node, p = 0; pNode < node_in; pNode++, p++)
+			pNode->set(1, 0, (double)img[p], img[p], img[p]);
+
+		nbits = ((sizeof(Pixel) << 3) - 1);
+		maxpixval = ~(1 << nbits);
+		for (pRank = rankinfo; pNode < node + maxSize; pNode++, pRank++)
+			pNode->set(0, pRank->alpha, 0.0, maxpixval, 0);
+		//inline void set(Imgidx area_in, Pixel level, double sumPix_in, Pixel minPix_in, Pixel maxPix_in)
+
+		isVisited[0] = 1;
+		if (connectivity == 4)
+		{
+			queue->push(rank[0]);
+			queue->push(rank[1]);
+		}
+		else
+		{
+			queue->push(rank[1]);
+			queue->push(rank[2]);
+			queue->push(rank[3]);
+		}
+
+		current_rank = queue->top();
+		node[0].connect_to_parent(&node_in[current_rank], current_rank + imgsize);
+		//isVisited_edges[current_rank] = 1;
+		iChild = current_rank;
+
+		while (1)//(current_rank <= nredges)
+		{
+			while (1)//((trie->top() >> 1) <= current_rank)
+			{
+				top_rank = queue->top();	//remove tmp variables later if possible
+			//	if (isVisited_edges[top_rank])
+			//		break;
+				pRank = rankinfo + top_rank;
+				if (isVisited[pRank->p])
+				{
+					if (isVisited[pRank->q])
+						break;
+					p = pRank->q;
+				}
+				else
+					p = pRank->p;
+
+				isVisited[p] = 1;
+#if !HQUEUE_COST_AMORTIZE
+				//find_min_level();
+#endif
+				if (connectivity == 4)
+				{
+					isAv = get_field(isAvailable, p);
+					q = p << 1;
+
+					if (is_available(isAv, 0) && !isVisited[p + width])
+						queue->push(rank[q]);
+					if (is_available(isAv, 1) && !isVisited[p + 1])
+						queue->push(rank[q + 1]);
+					if (is_available(isAv, 2) && !isVisited[p - 1])
+						queue->push(rank[q - 1]);
+					if (is_available(isAv, 3) && !isVisited[p - width])
+						queue->push(rank[q - (width << 1)]);
+				}
+				else
+				{
+					isAv = isAvailable[p];
+					q = p << 2;
+
+					if (is_available(isAv, 0) && !isVisited[p + wstride1])
+						queue->push(rank[q]);
+					if (is_available(isAv, 1) && !isVisited[p + width])
+						queue->push(rank[q + 1]);
+					if (is_available(isAv, 2) && !isVisited[p + wstride0])
+						queue->push(rank[q + 2]);
+					if (is_available(isAv, 3) && !isVisited[p + 1])
+						queue->push(rank[q + 3]);
+					if (is_available(isAv, 4) && !isVisited[p - wstride1])
+						queue->push(rank[q - wstride_d + 4]);
+					if (is_available(isAv, 5) && !isVisited[p - width])
+						queue->push(rank[q - wstride_d + 1]);
+					if (is_available(isAv, 6) && !isVisited[p - wstride0])
+						queue->push(rank[q - wstride_d - 2]);
+					if (is_available(isAv, 7) && !isVisited[p - 1])
+						queue->push(rank[q - 1]);
+				}
+
+				next_rank = queue->top();
+				/*				if(p == 27579)
+								{
+									node[p].print(node);
+									node[5773602].print(node);
+									getchar();
+
+									disp = 0;
+								}
+								*/
+				node[p].connect_to_parent(&node_in[next_rank], next_rank + imgsize);
+
+				/*				disp = 0;
+								if(p == 27579)
+								{
+									node[p].print(node);
+									node_in[node[p].parentidx].print(node);
+									getchar();
+								}
+				*/
+				if (current_rank == next_rank)
+					break;
+				current_rank = next_rank;
+			}
+
+			queue->pop();
+			next_rank = queue->top();
+
+			//Redundant node removal
+			if (node_in[iChild].parentidx == current_rank &&
+				node_in[iChild].area == node_in[current_rank].area)
+				current_rank = iChild;
+
+			node_in[current_rank].connect_to_parent(&node_in[next_rank], next_rank);
+			if (node_in[next_rank].area == imgsize)
+			{
+				if (node_in[current_rank].area == imgsize)
+					next_rank = current_rank;
+				//				node_in[next_rank].parentidx = next_rank;
+				// node_in[next_rank].parentidx = -1;
+
+				break;
+			}
+
+			iChild = current_rank;
+			current_rank = next_rank;
+		}
+
+		Imgidx num_excessnodes = 0;
+		for (pNode = node_in; pNode < node + maxSize; pNode++)
+		{
+			pNode->parentidx += imgsize;
+			if (pNode->area == 0)
+				num_excessnodes++;
+		}
+		//num_excessnodes += num_danglingnodes;
+		node_in[next_rank].parentidx = -1;
+
+		//ratio_danglingnodes = (double)num_danglingnodes / (double)maxSize;
+		//ratio_excessnodes = (double)num_excessnodes / (double)nredges;
+
+
+		delete queue;
+		Free(rank);
+		Free(rankinfo);
+		//Free(rank2alpha);
+//		Free(levelroot);
+		Free(isVisited);
+		//Free(isVisited_edges);
+		Free(isAvailable);
+	}
+
 
 	
 // 	void Flood_PQueue(Pixel* img)
@@ -1642,7 +2139,7 @@ class ATree
 		node_in[next_rank].parentidx = -1;
 
 		//ratio_danglingnodes = (double)num_danglingnodes / (double)maxSize;
-		ratio_excessnodes = (double)num_excessnodes / (double)nredges;
+		//ratio_excessnodes = (double)num_excessnodes / (double)nredges;
 
 
 		delete queue;
@@ -1884,7 +2381,7 @@ class ATree
 		node_in[next_rank].parentidx = -1;
 
 		//ratio_danglingnodes = (double)num_danglingnodes / (double)maxSize;
-		ratio_excessnodes = (double)num_excessnodes / (double)nredges;
+		//ratio_excessnodes = (double)num_excessnodes / (double)nredges;
 
 
 		delete queue;
@@ -2127,7 +2624,7 @@ public:
 	Imgidx num_node, num_node_in;
 	Imgidx rootidx;
 	Imgidx* parentAry;
-	double ratio_excessnodes;
+	//double ratio_excessnodes;
 	double nrmsd;
 	int8 pix_type;
 	int8 bit_depth;
@@ -2163,6 +2660,11 @@ public:
 		case(3): //HybridQueue
 			Flood_HybridQueue(img);
 			break;
+		case(4):
+			Flood_PQueue_UnionbyRank(img);
+//			Flood_HQueue_UnionbyRank(img);
+		case(5):
+			Flood_PQueue_UnionbyRank(img);
 		default:
 			break;
 		}

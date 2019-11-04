@@ -2,6 +2,7 @@
 
 #include "defines.h"
 #include "allocator.h"
+#include "iostream"
 
 template <class Imgidx>
 class HQueue
@@ -14,32 +15,32 @@ public:
 	HQueue(uint64 qsize_in, Imgidx *dhist, int32 numlevels)
 	{
 		//tmp
-		queue = (Imgidx*)Malloc((size_t)qsize_in * sizeof(Imgidx), 1);
-		bottom = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx), 1);
-		cur = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx), 1);
+		queue = (Imgidx*)Malloc((size_t)qsize_in * sizeof(Imgidx));
+		bottom = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx));
+		cur = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx));
 
 
-// 		qsize = qsize_in;
-// 		min_level = numlevels - 1;
-// 
-// 		Imgidx sum_hist = 0;
-// 		for (int32 i = 0; i < numlevels; i++)
-// 		{
-// 			bottom[i] = cur[i] = sum_hist;
-// 			sum_hist += dhist[i];
-// 		}
-// 		bottom[numlevels] = 0;
-// 		cur[numlevels] = 1;
+		qsize = qsize_in;
+		min_level = numlevels - 1;
+
+		Imgidx sum_hist = 0;
+		for (int32 i = 0; i < numlevels; i++)
+		{
+			bottom[i] = cur[i] = sum_hist;
+			sum_hist += dhist[i];
+		}
+		bottom[numlevels] = 0;
+		cur[numlevels] = 1;
 	}
 	~HQueue()
 	{
-		Free(queue, 1);
-		Free(bottom, 1);
-		Free(cur, 1);
+		Free(queue);
+		Free(bottom);
+		Free(cur);
 	}
 
 	inline void push(Imgidx pidx, int64 level)
-	{	
+	{
 		min_level = min(level, min_level);
 #if DEBUG
 		assert(level < max_level);
@@ -57,6 +58,72 @@ public:
 	{
 		while (bottom[min_level] == cur[min_level])
 			min_level++;
+	}
+};
+
+
+template <class Imgidx>
+class HQueue_ubr
+{
+	int8 *queue;
+//	Imgidx *bottom, *cur;
+public:
+	uint64 qsize;
+	Imgidx min_level;
+	HQueue_ubr(uint64 qsize)
+	{
+		//tmp
+		queue = (int8*)Malloc((size_t)(qsize + 1) * sizeof(int8));
+		min_level = (Imgidx)(qsize);
+
+		for (uint64 i = 0; i < qsize; i++)
+			queue[i] = 0;
+		//queue[qsize] = 1;
+//		bottom = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx), 1);
+	//	cur = (Imgidx*)Malloc((size_t)(numlevels + 1) * sizeof(Imgidx), 1);
+
+
+		// 		qsize = qsize_in;
+		// 		min_level = numlevels - 1;
+		// 
+		// 		Imgidx sum_hist = 0;
+		// 		for (int32 i = 0; i < numlevels; i++)
+		// 		{
+		// 			bottom[i] = cur[i] = sum_hist;
+		// 			sum_hist += dhist[i];
+		// 		}
+		// 		bottom[numlevels] = 0;
+		// 		cur[numlevels] = 1;
+	}
+	~HQueue_ubr()
+	{
+		Free(queue);
+		//Free(bottom, 1);
+		//Free(cur, 1);
+	}
+
+	inline void push(Imgidx pidx)
+	{
+		min_level = min(pidx, min_level);
+		queue[pidx] = 1;
+	}
+
+	inline Imgidx top()
+	{
+		return min_level;
+	}
+
+	inline void pop()
+	{
+		queue[min_level] = 0;
+		//std::cout << "popping from" << min_level << std::endl;
+		while (!queue[min_level])
+			min_level++;
+	}
+
+	inline void find_min_level()
+	{
+		
 	}
 };
 /*

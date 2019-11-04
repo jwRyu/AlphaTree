@@ -19,7 +19,7 @@
 #include "Trie.h"
 using namespace std;
 
-#define OUTPUT_FNAME "D:/RUG/2019/TTMA_ISMM/pilot_test_PQ.dat"
+#define OUTPUT_FNAME "D:/RUG/2019/TTMA_ISMM/tmptmp.dat"
 //#define OUTPUT_FNAME "C:/Users/jwryu/Google Drive/RUG/2019/AlphaTree_Trie/tmptmptmp.dat"
 
 #define INPUTIMAGE_DIR	"D:/RUG/2018/AlphaTree/imgdata/Grey"
@@ -207,15 +207,14 @@ int main(int argc, char **argv)
 	}
 	else
 		f.open(fname);
-	//alg - 0:hqueue 1:PQ 2:trie 3:hybqueue
-	for (int algorithm = 1; algorithm < 3; algorithm++)
+	int start_al = 1;
+	//alg - 0:hqueue 1:heap queue 2:trie 3:hybqueue 4:hqueue unionbyrank 5: heapqueue unionbyrank
+	for (int algorithm = start_al; algorithm < start_al+1; algorithm++)
 	{
 		int bit_depth_lim = 32;
-		if (algorithm < 1)
-			bit_depth_lim = 22;
-		//if (algorithm == 1)//pq doesn't work!
-		//	continue;
-		for (bit_depth = 8; bit_depth <= bit_depth_lim; bit_depth++)
+		if (algorithm < 0)
+			bit_depth_lim = 8;
+		for (bit_depth = 20; bit_depth <= bit_depth_lim; bit_depth++)
 		{
 			cnt = 0;
 			printf("%d=======Bit depth: %d\n", algorithm, bit_depth);
@@ -240,11 +239,19 @@ int main(int argc, char **argv)
 					for (auto & p : std::experimental::filesystem::directory_iterator(path))
 					{
 						cnt++;
-						if(cnt > 1246 || (algorithm == 1 && bit_depth < 20 || (algorithm == 1 && bit_depth == 20 && cnt <= 1225)))
-						//if (++cnt < contidx)
-						//if(0)
+						if (cnt > 1246 || (algorithm == start_al && bit_depth < 8 || (algorithm == start_al && bit_depth == 8 && cnt <= 0)))
+						{
+							cout << (int)algorithm << " " << (int)bit_depth << " " << (int)cnt << ": " << p << endl;
+							f << p.path().string().c_str() << '\t' << algorithm << '\t' << (int)bit_depth << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << tree->get_nrmsd() << '\t' << tree->get_maxSize()
+								<< '\t' << tree->get_curSize() << '\t' << 0 << '\t' << 0 << endl;
+							continue;
+						}
+						if (cnt % 10 != 1)
 						{
 							//cout << (int)algorithm << " " << (int)bit_depth << " " << (int)cnt << ": " << p << endl;
+							f << p.path().string().c_str() << '\t' << algorithm << '\t' << (int)bit_depth << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << tree->get_nrmsd() << '\t' << tree->get_maxSize()
+								<< '\t' << tree->get_curSize() << '\t' << 0 << '\t' << 0 << endl;
+
 							continue;
 						}
 						if(0)// ((i == 0 && cnt > 2) || (i == 1 && cnt > 5))
@@ -352,6 +359,7 @@ int main(int argc, char **argv)
 							else if (bit_depth > 16)	free(hdrimg32);
 							else						free(hdrimg16);
 						}
+						return 0;
 					}
 				}
 			}

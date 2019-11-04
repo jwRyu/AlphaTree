@@ -14,16 +14,28 @@ void* Malloc(size_t size)
 	return (void*)((size_t*)pNew + 1);
 }
 
-void* Malloc(size_t size, int fake)
+void* Calloc(size_t size)
 {
-	void* pNew = malloc(sizeof(size_t));
+	void* pNew = calloc(size + sizeof(size_t), 1);
 
 	memuse += size;
 	max_memuse = max(memuse, max_memuse);
 
 	*((size_t*)pNew) = size;
 	return (void*)((size_t*)pNew + 1);
+
 }
+// 
+// void* Malloc(size_t size, int fake)
+// {
+// 	void* pNew = malloc(sizeof(size_t));
+// 
+// 	memuse += size;
+// 	max_memuse = max(memuse, max_memuse);
+// 
+// 	*((size_t*)pNew) = size;
+// 	return (void*)((size_t*)pNew + 1);
+// }
 
 void* Realloc(void* ptr, size_t size)
 {
@@ -48,9 +60,9 @@ void Free(void* ptr)
 	free((void*)((size_t*)ptr - 1));
 }
 
-void Free(void* ptr, int fake)
-{
-	size_t size = *((size_t*)ptr - 1);
-	memuse -= size;
-	free((void*)((size_t*)ptr - 1));
-}
+// void Free(void* ptr, int fake)
+// {
+// 	size_t size = *((size_t*)ptr - 1);
+// 	memuse -= size;
+// 	free((void*)((size_t*)ptr - 1));
+// }

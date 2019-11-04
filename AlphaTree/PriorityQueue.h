@@ -68,6 +68,7 @@ public:
 		}
 	}
 
+	Imgidx top() { return arr[1].pidx; }
 
 	Imgidx pop()
 	{
@@ -119,6 +120,11 @@ public:
 		return outval;
 	}
 
+	void push(Imgidx pidx)
+	{
+		push(pidx, (Pixel)pidx);
+	}
+
 	void push(Imgidx pidx, Pixel alpha)
 	{
 		Imgidx current, next;
@@ -146,6 +152,135 @@ public:
 
 		if (current == 1)
 			min_level = alpha;
+		//validate();
+	}
+};
+
+
+//Heap-based priority queue
+template<class Imgidx>
+class PriorityQueue_ubr
+{
+	Imgidx cursize;
+	Imgidx maxsize;
+	Imgidx *arr;
+#if PQ_DEBUG
+	std::fstream fs;
+#endif
+public:
+	Imgidx min_level;
+	PriorityQueue_ubr(Imgidx maxsize) : cursize(0), maxsize(maxsize)
+	{
+		arr = new Imgidx[maxsize + 1];
+#if PQ_DEBUG
+		this->fs.open("D:/RUG/2019/TTMA_ISMM/qstat.dat", std::fstream::out);
+#endif
+
+	}
+
+	~PriorityQueue_ubr()
+	{
+		delete[] arr;
+
+#if PQ_DEBUG
+		fs.close();
+#endif
+	}
+
+	inline void find_min_level() {};
+
+	inline void validate()
+	{
+		Imgidx i, j;
+
+		for (i = cursize; i > 1; i--)
+		{
+			j = i >> 1;
+			if (arr[i].alpha < arr[j].alpha)
+			{
+				std::cout << "invalidate queue" << std::endl;
+				std::cin >> i;
+			}
+		}
+	}
+
+	Imgidx top() { return arr[1]; }
+
+	Imgidx pop()
+	{
+		Imgidx outval;
+		Imgidx current = 1, next, next0, next1, curidx;
+		Imgidx curalpha;
+
+		// 		ulong val_out = queue->array[1];
+		// 		ulong current = 1, moved;
+		// 		value val_cur;
+
+
+		outval = arr[current];
+		curidx = arr[cursize--];
+		//curalpha = arr[cursize].alpha;
+		//		if (curidx < 0)
+			//		curidx = curidx;
+
+#if PQ_DEBUG
+		fs << "1" << std::endl << (int)arr[1].alpha << std::endl;
+#endif
+		while (1)
+		{
+			next0 = current << 1;
+			next1 = next0 + 1;
+			if (next0 > cursize)
+				break;
+			if (next1 <= cursize && arr[next1] < arr[next0])
+				next = next1;
+			else
+				next = next0;
+
+			if (curidx < arr[next])
+				break;
+
+			arr[current] = arr[next];
+			current = next;
+		}
+		arr[current] = curidx;
+
+		if (cursize)
+			min_level = arr[1];
+		else
+			min_level = (Imgidx)-1;
+
+		//validate();
+
+		return outval;
+	}
+
+	void push(Imgidx pidx)
+	{
+		Imgidx current, next;
+
+#if PQ_DEBUG
+		fs << "0" << std::endl << (int)alpha << std::endl;
+#endif
+		//		value val_cur = tree[pixpos].gval;
+		cursize++;
+		current = cursize;
+
+		//	if (pidx < 0)
+		//		pidx = pidx;
+
+		next = current >> 1;
+		while (next && (arr[next] > pidx))
+		{
+			arr[current] = arr[next];
+			current = next;
+			next = next >> 1;
+		}
+
+		arr[current] = pidx;
+
+		if (current == 1)
+			min_level = pidx;
 		//validate();
 	}
 };
