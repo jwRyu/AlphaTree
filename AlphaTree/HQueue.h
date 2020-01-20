@@ -39,14 +39,21 @@ public:
 		Free(cur);
 	}
 
-	inline void push(Imgidx pidx, int64 level)
+	inline int push(Imgidx pidx, int64 level)
 	{
-		min_level = min(level, min_level);
 #if DEBUG
 		assert(level < max_level);
 		assert(cur[level] < qsize);
 #endif
 		queue[cur[level]++] = pidx;
+		if (level < min_level)
+		{
+			min_level = level;
+			return 1;
+		}
+		else
+			return 0;
+//		min_level = min(level, min_level);
 	}
 
 	inline Imgidx pop()

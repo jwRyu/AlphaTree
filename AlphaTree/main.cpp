@@ -24,7 +24,7 @@ using namespace std;
 
 #define INPUTIMAGE_DIR	"D:/RUG/2018/AlphaTree/imgdata/Grey"
 #define INPUTIMAGE_DIR_COLOUR	"D:/RUG/2018/AlphaTree/imgdata/Colour" //colour images are used after rgb2grey conversion
-#define REPEAT 1
+#define REPEAT 5
 #define RUN_TSE_ONLY 0
 
 #define DEBUG 0
@@ -207,14 +207,14 @@ int main(int argc, char **argv)
 	}
 	else
 		f.open(fname);
-	int start_al = 1;
+	int start_al = 0;
 	//alg - 0:hqueue 1:heap queue 2:trie 3:hybqueue 4:hqueue unionbyrank 5: heapqueue unionbyrank
 	for (int algorithm = start_al; algorithm < start_al+1; algorithm++)
 	{
 		int bit_depth_lim = 32;
 		if (algorithm < 0)
 			bit_depth_lim = 8;
-		for (bit_depth = 20; bit_depth <= bit_depth_lim; bit_depth++)
+		for (bit_depth = 8; bit_depth <= bit_depth_lim; bit_depth++)
 		{
 			cnt = 0;
 			printf("%d=======Bit depth: %d\n", algorithm, bit_depth);
@@ -318,6 +318,8 @@ int main(int argc, char **argv)
 							tree = new AlphaTree(bit_depth);// (AlphaTree*)Malloc(sizeof(AlphaTree));
 							//		start = clock();
 
+							//tree->BuildAlphaTree(testimg, 4, 4, 1, 4, algorithm);
+
 							if (bit_depth > 8)
 							{
 
@@ -359,7 +361,7 @@ int main(int argc, char **argv)
 							else if (bit_depth > 16)	free(hdrimg32);
 							else						free(hdrimg16);
 						}
-						return 0;
+						//return 0;
 					}
 				}
 			}
