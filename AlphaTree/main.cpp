@@ -19,12 +19,12 @@
 #include "Trie.h"
 using namespace std;
 
-#define OUTPUT_FNAME "D:/RUG/2019/TTMA_ISMM/tmptmp.dat"
+#define OUTPUT_FNAME "D:/RUG/2019/TTMA_ISMM/tmp1.dat"
 //#define OUTPUT_FNAME "C:/Users/jwryu/Google Drive/RUG/2019/AlphaTree_Trie/tmptmptmp.dat"
 
 #define INPUTIMAGE_DIR	"D:/RUG/2018/AlphaTree/imgdata/Grey"
 #define INPUTIMAGE_DIR_COLOUR	"D:/RUG/2018/AlphaTree/imgdata/Colour" //colour images are used after rgb2grey conversion
-#define REPEAT 5
+#define REPEAT 3
 #define RUN_TSE_ONLY 0
 
 #define DEBUG 0
@@ -94,6 +94,22 @@ void RandomizedHDRimage(uint16* hdrimg, uint8* ldrimg, int64 imgsize, int8 bit_d
 		pix |= ((uint32)(rand() & 0xff));
 		pix >>= 16 - bit_depth;
 		hdrimg[i] = pix;
+	}
+}
+
+
+void Randomizedimage(uint8* img, int64 imgsize)
+{
+	uint32 pix;
+
+	for (int64 i = 0; i < imgsize; i++)
+	{
+		img[i] = rand() & 0x0f;
+// 		pix |= ((uint32)(rand() & 0xff) << 16);
+// 		pix |= ((uint32)(rand() & 0xff) << 8);
+// 		pix |= ((uint32)(rand() & 0xff));
+// 		pix >>= 32 - bit_depth;
+// 		hdrimg[i] = pix;
 	}
 }
 
@@ -175,7 +191,13 @@ int main(int argc, char **argv)
 	std::string path;
 	double time_elapsed = 0;
 	double pixels_processed = 0;
-	uint8 testimg[4 * 4] = { 4, 4, 2, 0, 4, 1, 1, 0, 0, 3, 0, 0, 2, 2, 0, 5 };
+	//uint8 testimg[4 * 4] = { 4, 4, 2, 0, 4, 1, 1, 0, 0, 3, 0, 0, 2, 2, 0, 5 };
+	//uint8 testimg[4 * 4] = { 3,2,13,8,3,11,11,6,15,3,10,13,9,8,5,15 };
+	//uint8 testimg[4 * 4] = { 3,6,11,12,7,12,14,9,4,14,13,12,6,7,7,14 };
+	//uint8 testimg[4 * 4] = {3,2,13,8,3,11,11,6,15,3,10,13,9,8,5,15};
+	//uint8 testimg[4 * 4] = { 1,14,9,4,10,4,7,13,15,9,9,4,1,15,8,2 };
+	//uint8 testimg[4 * 4] = { 3,15,2,15,7,3,7,2,13,5,2,15,13,0,3,6 };
+	uint8 testimg[5 * 5] = {6,2,2,6,13,0,4,15,10,7,2,7,8,9,1,3,11,9,2,14,3,4,14,12,4};
 	uint64 *hdrimg64;
 	uint32 *hdrimg32;
 	uint16 *hdrimg16;
@@ -198,7 +220,7 @@ int main(int argc, char **argv)
 		{
 			f.open(fname, std::ofstream::app);
 			cout << "Start from : ";
-			cin >> contidx;
+			//cin >> contidx;
 		}
 		else if (in == 'y')
 			f.open(fname);
@@ -208,14 +230,23 @@ int main(int argc, char **argv)
 	else
 		f.open(fname);
 	int start_al = 0;
-	//alg - 0:hqueue 1:heap queue 2:trie 3:hybqueue 4:hqueue unionbyrank 5: heapqueue unionbyrank
-	for (int algorithm = start_al; algorithm < start_al+1; algorithm++)
+	//alg - 0:hqueue 1:heap queue 2:trie 3:hybqueue 4: heapqueue unionbyrank 5:seeker hqueue 6:2lvl seeker hqueue
+	for (int algorithm = start_al; algorithm < 7; algorithm++)
 	{
-		int bit_depth_lim = 32;
-		if (algorithm < 0)
-			bit_depth_lim = 8;
-		for (bit_depth = 8; bit_depth <= bit_depth_lim; bit_depth++)
+		int bit_depth_lim = 30;
+		if (algorithm == 0)
+			bit_depth_lim = 22;
+		if (algorithm == 5)
+			bit_depth_lim = 26;
+		if (algorithm == 5)
+			bit_depth_lim = 30;
+		for (bit_depth = 8; bit_depth <= bit_depth_lim; bit_depth+=2)
 		{
+
+			//tmp
+			//if(algorithm < 3)// || algorithm == 6 && bit_depth < 28)
+			//	continue;
+
 			cnt = 0;
 			printf("%d=======Bit depth: %d\n", algorithm, bit_depth);
 			//		for (mem_scheme = 0; mem_scheme < 4; mem_scheme++) // memory scheme loop (TSE, Max, Linear, Exp)
@@ -239,18 +270,21 @@ int main(int argc, char **argv)
 					for (auto & p : std::experimental::filesystem::directory_iterator(path))
 					{
 						cnt++;
-						if (cnt > 1246 || (algorithm == start_al && bit_depth < 8 || (algorithm == start_al && bit_depth == 8 && cnt <= 0)))
+						//if (cnt > 1) //tmp
+						//	continue;
+						if(cnt > 1246) //perma
+							continue;
+						if (0) //(cnt > 1246 || (algorithm == start_al && bit_depth < 8 || (algorithm == start_al && bit_depth == 8 && cnt <= 0)))
 						{
 							cout << (int)algorithm << " " << (int)bit_depth << " " << (int)cnt << ": " << p << endl;
 							f << p.path().string().c_str() << '\t' << algorithm << '\t' << (int)bit_depth << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << tree->get_nrmsd() << '\t' << tree->get_maxSize()
 								<< '\t' << tree->get_curSize() << '\t' << 0 << '\t' << 0 << endl;
 							continue;
 						}
-						if (cnt % 10 != 1)
+						if (cnt % 100 != 1)
 						{
 							//cout << (int)algorithm << " " << (int)bit_depth << " " << (int)cnt << ": " << p << endl;
-							f << p.path().string().c_str() << '\t' << algorithm << '\t' << (int)bit_depth << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << tree->get_nrmsd() << '\t' << tree->get_maxSize()
-								<< '\t' << tree->get_curSize() << '\t' << 0 << '\t' << 0 << endl;
+							//f << p.path().string().c_str() << '\t' << algorithm << '\t' << (int)bit_depth << '\t' << height << '\t' << width << '\t' << endl;
 
 							continue;
 						}
@@ -318,7 +352,32 @@ int main(int argc, char **argv)
 							tree = new AlphaTree(bit_depth);// (AlphaTree*)Malloc(sizeof(AlphaTree));
 							//		start = clock();
 
-							//tree->BuildAlphaTree(testimg, 4, 4, 1, 4, algorithm);
+							//Randomizedimage(testimg, 5 * 5);
+// 							int kk = 0;
+// 							cout << "--------" << endl;
+// 							for (int ii = 0; ii < 5; ii++)
+// 							{
+// 								for (int jj = 0; jj < 5; jj++)
+// 								{
+// 									cout << (int)testimg[kk++] << ' ';
+// 								}
+// 								cout << endl;
+// 							}
+// 
+// 							cout << "running alg 0" << endl;
+// 							tree->BuildAlphaTree(testimg, 5, 5, 1, 4, 0);
+// 							//tree->BuildAlphaTree(cvimg.data, height, width, channel, 4, 0);
+// 							cout << (int)bit_depth << " Time Elapsed: " << 0 << "# Nodes: " << tree->get_curSize() << endl;
+// 
+// 							cout << "running alg 1" << endl;
+// 							int64 size1 = tree->get_curSize();
+// 							tree->clear();
+// 							tree->BuildAlphaTree(testimg, 5, 5, 1, 4, 1);
+// 							//tree->BuildAlphaTree(cvimg.data, height, width, channel, 4, 1);
+// 							cout << (int)bit_depth << " Time Elapsed: " << 0 << "# Nodes: " << tree->get_curSize() << endl;
+// 
+// 							if (tree->get_curSize() != size1)
+// 								size1 = size1;
 
 							if (bit_depth > 8)
 							{
@@ -329,9 +388,8 @@ int main(int argc, char **argv)
 							}
 							else
 								tree->BuildAlphaTree(cvimg.data, height, width, channel, 4, algorithm);
-							//tree->BuildAlphaTree(testimg, 4, 4, 1, 4, 0);
-
-	//					
+							
+						
 						//BuildAlphaTree(tree, hdrimg, height, width, channel, bit_depth);
 						//BuildAlphaTree(tree, testimg, 4, 4, 1);
 
@@ -348,7 +406,7 @@ int main(int argc, char **argv)
 
 						cvimg.release();
 						f << p.path().string().c_str() << '\t' << algorithm << '\t' << (int)bit_depth << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << tree->get_nrmsd() << '\t' << tree->get_maxSize()
-							<< '\t' << tree->get_curSize() << '\t' << minruntime << '\t' << 0 << endl;
+							<< '\t' << tree->get_curSize() << '\t' << minruntime << '\t' << pixels_processed / (time_elapsed * 1000000) << endl;
 						//f << p.path().string().c_str() << '\t' << height << '\t' << width << '\t' << max_memuse << '\t' << nrmsd << '\t' << tree->maxSize
 						//	<< '\t' << tree->curSize << '\t' << minruntime << '\t' << mem_scheme << endl;
 						cout << (int)bit_depth << " Time Elapsed: " << minruntime << "# Nodes: " << tree->get_curSize() << " mean processing speed(Mpix/s): " << pixels_processed / (time_elapsed * 1000000) << endl;

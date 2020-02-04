@@ -28,18 +28,23 @@ class PriorityQueue
 	Imgidx cursize;
 	Imgidx maxsize;
 	PQarray<Imgidx, Pixel> *arr;
+	Pixel pop_level;
+	Pixel max_level;
+	PQarray<Imgidx, Pixel> pushlist[7];//Connectivity - 1
+	int8 pushlistidx;
 #if PQ_DEBUG
 	std::fstream fs;
 #endif
 public:
-	Pixel min_level;
+//	Pixel min_level;
 	PriorityQueue(Imgidx maxsize) : cursize(0), maxsize(maxsize)
 	{
 		arr = new PQarray<Imgidx, Pixel>[maxsize + 1];
+		pushlistidx = 0;
 #if PQ_DEBUG
 		this->fs.open("D:/RUG/2019/TTMA_ISMM/qstat.dat", std::fstream::out);
 #endif
-
+		max_level = (Pixel)-1;
 	}
 
 	~PriorityQueue()
@@ -51,7 +56,41 @@ public:
 #endif
 	}
 
-	inline void find_min_level() {};
+	inline int minidx_pushlist()
+	{
+		int minidx = 0;
+		for (int i = 0; i < pushlistidx; i++)
+		{
+			if (pushlist[i].alpha < pushlist[minidx].alpha)
+				minidx = i;
+		}
+		return minidx;
+	}
+
+	inline void find_min_level()
+	{
+		int minidx = minidx_pushlist();
+		if (pushlist[minidx].alpha <= arr[1].alpha)
+		{
+			arr[1].alpha = pushlist[minidx].alpha;
+			arr[1].pidx = pushlist[minidx].pidx;
+		}
+		else
+		{
+			pop_run();
+			push_run(pushlist[minidx].pidx, pushlist[minidx].alpha);
+		}
+		
+		for (int i = 1; i < pushlistidx; i++)
+		{
+			pushlist[minidx].alpha = max_level;
+			minidx = minidx_pushlist();
+			push_run(pushlist[minidx].pidx, pushlist[minidx].alpha);
+		}
+//		min_level = arr[1].alpha;
+	}
+
+	inline Pixel get_minlev() { return arr[1].alpha; }
 
 	inline void validate()
 	{
@@ -71,6 +110,12 @@ public:
 	Imgidx top() { return arr[1].pidx; }
 
 	Imgidx pop()
+	{
+		//pop_level = arr[1].alpha;
+		pushlistidx = 0;
+		return arr[1].pidx;
+	}
+	Imgidx pop_run()
 	{
 		Imgidx outval = arr[1].pidx;
 		Imgidx current = 1, next, next0, next1, curidx;
@@ -109,23 +154,29 @@ public:
 		}
 		arr[current].alpha = curalpha;
 		arr[current].pidx = curidx;
-
-		if (cursize)
-			min_level = arr[1].alpha;
-		else
-			min_level = (Pixel)-1;
+// 
+// 		if (cursize)
+// 			min_level = arr[1].alpha;
+// 		else
+// 			min_level = (Pixel)-1;
 
 		//validate();
 
 		return outval;
 	}
 
-	void push(Imgidx pidx)
+	void push(Imgidx pidx, Pixel alpha)
 	{
-		push(pidx, (Pixel)pidx);
+		pushlist[pushlistidx].pidx = pidx;
+		pushlist[pushlistidx++].alpha = alpha;
 	}
 
-	void push(Imgidx pidx, Pixel alpha)
+	void push(Imgidx pidx)
+	{
+		push_run(pidx, (Pixel)pidx);
+	}
+
+	void push_run(Imgidx pidx, Pixel alpha)
 	{
 		Imgidx current, next;
 
@@ -150,8 +201,8 @@ public:
 		arr[current].pidx = pidx;
 		arr[current].alpha = alpha;
 
-		if (current == 1)
-			min_level = alpha;
+// 		if (current == 1)
+// 			min_level = alpha;
 		//validate();
 	}
 };
