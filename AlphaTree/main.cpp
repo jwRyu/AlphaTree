@@ -14,7 +14,7 @@
 #include <fstream>
 
 #include "AlphaTree.h"
-#include "HQueue.h"
+#include "HierarQueue.h"
 #include "allocator.h"
 #include "Trie.h"
 using namespace std;
@@ -24,7 +24,7 @@ using namespace std;
 
 #define INPUTIMAGE_DIR	"D:/RUG/2018/AlphaTree/imgdata/Grey"
 #define INPUTIMAGE_DIR_COLOUR	"D:/RUG/2018/AlphaTree/imgdata/Colour" //colour images are used after rgb2grey conversion
-#define REPEAT 3
+#define REPEAT 1
 #define RUN_TSE_ONLY 0
 
 #define DEBUG 0
@@ -68,6 +68,24 @@ uint8 isChanged(void *src)
 // 		hdrimg[i] = pix;
 // 	}
 // }
+
+void RandomizedHDRimage(uint64* hdrimg, uint8* ldrimg, int64 imgsize, int8 bit_depth)
+{
+	uint64 pix;
+
+	for (int64 i = 0; i < imgsize; i++)
+	{
+		pix = ((uint64)ldrimg[i]) << 56;
+		pix |= ((uint64)(rand() & 0xff) << 48);
+		pix |= ((uint64)(rand() & 0xff) << 32);
+		pix |= ((uint64)(rand() & 0xff) << 24);
+		pix |= ((uint64)(rand() & 0xff) << 16);
+		pix |= ((uint64)(rand() & 0xff) << 8);
+		pix |= ((uint64)(rand() & 0xff));
+		pix >>= 64 - bit_depth;
+		hdrimg[i] = pix;
+	}
+}
 
 void RandomizedHDRimage(uint32* hdrimg, uint8* ldrimg, int64 imgsize, int8 bit_depth)
 {
@@ -229,20 +247,19 @@ int main(int argc, char **argv)
 	}
 	else
 		f.open(fname);
-	int start_al = 0;
-	//alg - 0:hqueue 1:heap queue 2:trie 3:hybqueue 4: heapqueue unionbyrank 5:seeker hqueue 6:2lvl seeker hqueue
+	int start_al = 6;
+	// 0:HIERARCHICAL_QUEUE, 1:HIERARCHICAL_L1IDX_QUEUE, 2:HIERARCHICAL_L2IDX_QUEUE, 3:HEAP_QUEUE, 4:HEAP_RANK_QUEUE, 5:TRIE_QUEUE, 6:TRIE_HYBRID_QUEUE
 	for (int algorithm = start_al; algorithm < 7; algorithm++)
 	{
-		int bit_depth_lim = 30;
+		int bit_depth_lim = 64;
 		if (algorithm == 0)
 			bit_depth_lim = 22;
-		if (algorithm == 5)
+		if (algorithm == 1)
 			bit_depth_lim = 26;
-		if (algorithm == 5)
+		if (algorithm == 2)
 			bit_depth_lim = 30;
-		for (bit_depth = 8; bit_depth <= bit_depth_lim; bit_depth+=2)
+		for (bit_depth = 32; bit_depth <= bit_depth_lim; bit_depth+=2)
 		{
-
 			//tmp
 			//if(algorithm < 3)// || algorithm == 6 && bit_depth < 28)
 			//	continue;
@@ -319,7 +336,7 @@ int main(int argc, char **argv)
 							if (bit_depth > 32)
 							{
 								hdrimg64 = (uint64*)malloc(width * height * sizeof(uint64)) ;
-								RandomizedHDRimage(hdrimg32, (uint8*)(cvimg.data), height * width, (int8)bit_depth);
+								RandomizedHDRimage(hdrimg64, (uint8*)(cvimg.data), height * width, (int8)bit_depth);
 							}
 							if (bit_depth > 16)
 							{

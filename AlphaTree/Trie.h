@@ -72,7 +72,7 @@ public:
 	}
 
 	inline Imgidx top() { return minidx; }
-	inline Imgidx min_rank() { return minidx >> 1; }
+	inline Imgidx get_minlev() { return minidx >> 1; }
 	inline Imgidx min_incidence() { return minidx & 1; }
 	inline void push(Imgidx in, int8 incidence)
 	{

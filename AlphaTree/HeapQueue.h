@@ -6,14 +6,14 @@
 #endif
 
 template<class Imgidx, class Pixel>
-class PQarray
+class HQentry
 {
 public:
-	PQarray() {}
-	~PQarray() {}
+	HQentry() {}
+	~HQentry() {}
 	Imgidx pidx;
 	Pixel alpha;
-	inline void operator=(const PQarray& item)
+	inline void operator=(const HQentry& item)
 	{
 		this->pidx = item.pidx;
 		this->alpha = item.alpha;
@@ -23,23 +23,23 @@ public:
 
 //Heap-based priority queue
 template<class Imgidx, class Pixel>
-class PriorityQueue
+class HeapQueue
 {
 	Imgidx cursize;
 	Imgidx maxsize;
-	PQarray<Imgidx, Pixel> *arr;
+	HQentry<Imgidx, Pixel> *arr;
 	Pixel pop_level;
 	Pixel max_level;
-	PQarray<Imgidx, Pixel> pushlist[7];//Connectivity - 1
+	HQentry<Imgidx, Pixel> pushlist[7];//Connectivity - 1
 	int8 pushlistidx;
 #if PQ_DEBUG
 	std::fstream fs;
 #endif
 public:
 //	Pixel min_level;
-	PriorityQueue(Imgidx maxsize) : cursize(0), maxsize(maxsize)
+	HeapQueue(Imgidx maxsize) : cursize(0), maxsize(maxsize)
 	{
-		arr = new PQarray<Imgidx, Pixel>[maxsize + 1];
+		arr = new HQentry<Imgidx, Pixel>[maxsize + 1];
 		pushlistidx = 0;
 #if PQ_DEBUG
 		this->fs.open("D:/RUG/2019/TTMA_ISMM/qstat.dat", std::fstream::out);
@@ -47,7 +47,7 @@ public:
 		max_level = (Pixel)-1;
 	}
 
-	~PriorityQueue()
+	~HeapQueue()
 	{
 		delete[] arr;
 
@@ -67,7 +67,7 @@ public:
 		return minidx;
 	}
 
-	inline void find_min_level()
+	inline void find_minlev()
 	{
 		int minidx = minidx_pushlist();
 		if (pushlist[minidx].alpha <= arr[1].alpha)
@@ -107,15 +107,15 @@ public:
 		}
 	}
 
-	Imgidx top() { return arr[1].pidx; }
+	inline Imgidx top() { return arr[1].pidx; }
 
-	Imgidx pop()
+	inline Imgidx pop()
 	{
 		//pop_level = arr[1].alpha;
 		pushlistidx = 0;
 		return arr[1].pidx;
 	}
-	Imgidx pop_run()
+	inline Imgidx pop_run()
 	{
 		Imgidx outval = arr[1].pidx;
 		Imgidx current = 1, next, next0, next1, curidx;
@@ -165,18 +165,18 @@ public:
 		return outval;
 	}
 
-	void push(Imgidx pidx, Pixel alpha)
+	inline void push(Imgidx pidx, Pixel alpha)
 	{
 		pushlist[pushlistidx].pidx = pidx;
 		pushlist[pushlistidx++].alpha = alpha;
 	}
 
-	void push(Imgidx pidx)
-	{
-		push_run(pidx, (Pixel)pidx);
-	}
+// 	void push(Imgidx pidx)
+// 	{
+// 		push_run(pidx, (Pixel)pidx);
+// 	}
 
-	void push_run(Imgidx pidx, Pixel alpha)
+	inline void push_run(Imgidx pidx, Pixel alpha)
 	{
 		Imgidx current, next;
 
@@ -210,7 +210,7 @@ public:
 
 //Heap-based priority queue
 template<class Imgidx>
-class PriorityQueue_ubr
+class HeapQueue_rank
 {
 	Imgidx cursize;
 	Imgidx maxsize;
@@ -220,7 +220,7 @@ class PriorityQueue_ubr
 #endif
 public:
 	Imgidx min_level;
-	PriorityQueue_ubr(Imgidx maxsize) : cursize(0), maxsize(maxsize)
+	HeapQueue_rank(Imgidx maxsize) : cursize(0), maxsize(maxsize)
 	{
 		arr = new Imgidx[maxsize + 1];
 #if PQ_DEBUG
@@ -228,8 +228,7 @@ public:
 #endif
 
 	}
-
-	~PriorityQueue_ubr()
+	~HeapQueue_rank()
 	{
 		delete[] arr;
 
@@ -238,8 +237,8 @@ public:
 #endif
 	}
 
-	inline void find_min_level() {};
-
+	inline Imgidx get_minlev() { return arr[1]; }
+	inline void find_minlev() {};
 	inline void validate()
 	{
 		Imgidx i, j;
@@ -254,10 +253,8 @@ public:
 			}
 		}
 	}
-
-	Imgidx top() { return arr[1]; }
-
-	Imgidx pop()
+	inline Imgidx top() { return arr[1]; }
+	inline Imgidx pop()
 	{
 		Imgidx outval;
 		Imgidx current = 1, next, next0, next1, curidx;
@@ -305,8 +302,7 @@ public:
 
 		return outval;
 	}
-
-	void push(Imgidx pidx)
+	inline void push(Imgidx pidx)
 	{
 		Imgidx current, next;
 

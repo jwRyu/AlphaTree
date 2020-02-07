@@ -2,7 +2,7 @@
 #include "allocator.h"
 #include "defines.h"
 #include "Trie.h"
-#include "HQueue.h"
+#include "HierarQueue.h"
 
 // #include <iostream>
 // using namespace std;
@@ -88,10 +88,9 @@ public:
 	{
 		initHQ(size, listsize);
 	}
-	inline Imgidx top()
-	{ 
-		return list[0]; 
-	}
+
+	inline Imgidx get_minlev() { return list[0]; }
+	inline Imgidx top()	{ return list[0]; }
 	inline void push(Imgidx idx)
 	{
 		//MinList1<Imgidx> *p, *q;
@@ -218,7 +217,7 @@ class HybridQueue_HQueue
 	//MinList1<Imgidx> *list, *list_end, *head, *tail;
 	Imgidx *list;
 	int64 *levels;
-	HQueue_hdr<Imgidx> *queue;
+	HQueue_l1idx<Imgidx> *queue;
 	Imgidx minidx_queue;
 	int16 curSize_list, maxSize_list;
 	Imgidx maxSize_queue, mask_field;
@@ -245,7 +244,7 @@ class HybridQueue_HQueue
 		// 		queue = (Qidx*)Malloc(qsize * sizeof(Qidx*));	
 		//queue = (int8*)Malloc((size + 1) * sizeof(int8));
 		//trie = (Trie<Imgidx, int64>*)Malloc(size * sizeof(Trie<Imgidx, int64>*));
-		queue = new HQueue_hdr<Imgidx>(qsize_in, dhist, numlevels);
+		queue = new HQueue_l1idx<Imgidx>(qsize_in, dhist, numlevels);
 		list = (Imgidx*)Malloc((listsize) * sizeof(Imgidx));
 		levels = (int64*)Malloc((listsize + 1) * sizeof(int64));
 		levels[0] = 0;
@@ -285,10 +284,10 @@ public:
 	}
 	inline Imgidx top(){return list[0];}
 	inline int64 get_minlev() { return levels[0]; }
-	inline void find_min_level()
+	inline void find_minlev()
 	{
 //		if (minlevnotfixed)
-			queue->find_min_level();
+			queue->find_minlev();
 
 	}
 	inline void push(Imgidx idx, int64 level)

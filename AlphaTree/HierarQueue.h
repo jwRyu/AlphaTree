@@ -2,17 +2,16 @@
 
 #include "defines.h"
 #include "allocator.h"
-#include "iostream"
 
 template <class Imgidx>
-class HQueue
+class HierarQueue//: public PriorityQueue<Imgidx>
 {
 	Imgidx *queue;
 	Imgidx *bottom, *cur;
 public:
 	int64 qsize;
 	int64 min_level;
-	HQueue(uint64 qsize_in, Imgidx *dhist, int32 numlevels)
+	HierarQueue(uint64 qsize_in, Imgidx *dhist, int32 numlevels)
 	{
 		//tmp
 		queue = (Imgidx*)Malloc((size_t)qsize_in * sizeof(Imgidx));
@@ -32,7 +31,7 @@ public:
 		bottom[numlevels] = 0;
 		cur[numlevels] = 1;
 	}
-	~HQueue()
+	~HierarQueue()
 	{
 		Free(queue);
 		Free(bottom);
@@ -55,23 +54,19 @@ public:
 			//return 0;
 //		min_level = min(level, min_level);
 	}
-
 	inline Imgidx pop()
 	{
 		return queue[--cur[min_level]];
 	}
-
 	inline Imgidx top()
 	{
 		return queue[cur[min_level] - 1];
 	}
-
-	int64 get_minlev()
+	inline int64 get_minlev()
 	{
 		return min_level;
 	}
-
-	inline void find_min_level()
+	inline void find_minlev()
 	{
 		while (bottom[min_level] == cur[min_level])
 			min_level++;
@@ -81,7 +76,7 @@ public:
 
 
 template <class Imgidx>
-class HQueue_hdr
+class HQueue_l1idx
 {
 	Imgidx *queue;
 	Imgidx *bottom, *cur;
@@ -89,7 +84,7 @@ class HQueue_hdr
 public:
 	int64 qsize, seekersize;
 	int64 min_level;
-	HQueue_hdr(uint64 qsize_in, Imgidx *dhist, int32 numlevels)
+	HQueue_l1idx(uint64 qsize_in, Imgidx *dhist, int32 numlevels)
 	{
 		//tmp
 		queue = (Imgidx*)Malloc((size_t)qsize_in * sizeof(Imgidx));
@@ -113,7 +108,7 @@ public:
 		bottom[numlevels] = 0;
 		cur[numlevels] = 1;
 	}
-	~HQueue_hdr()
+	~HQueue_l1idx()
 	{
 		Free(queue);
 		Free(bottom);
@@ -158,7 +153,7 @@ public:
 		return min_level;
 	}
 
-	inline void find_min_level()
+	inline void find_minlev()
 	{
 		Imgidx qidx, widx;
 		uint64 w;
@@ -195,7 +190,7 @@ public:
 
 
 template <class Imgidx>
-class HQueue_hdr2
+class HQueue_l2idx
 {
 	Imgidx *queue;
 	Imgidx *bottom, *cur;
@@ -203,7 +198,7 @@ class HQueue_hdr2
 public:
 	int64 qsize;
 	int64 min_level;
-	HQueue_hdr2(uint64 qsize_in, Imgidx *dhist, int32 numlevels)
+	HQueue_l2idx(uint64 qsize_in, Imgidx *dhist, int32 numlevels)
 	{
 		int64 seekersize, seeker2size;
 		//tmp
@@ -235,7 +230,7 @@ public:
 		bottom[numlevels] = 0;
 		cur[numlevels] = 1;
 	}
-	~HQueue_hdr2()
+	~HQueue_l2idx()
 	{
 		Free(queue);
 		Free(bottom);
@@ -282,12 +277,12 @@ public:
 		return queue[cur[min_level] - 1];
 	}
 
-	int64 get_minlev()
+	inline int64 get_minlev()
 	{
 		return min_level;
 	}
 
-	inline void find_min_level()
+	inline void find_minlev()
 	{
 		Imgidx qidx, widx;
 		uint64 w;
@@ -400,7 +395,7 @@ public:
 			min_level++;
 	}
 
-	inline void find_min_level()
+	inline void find_minlev()
 	{
 		
 	}
