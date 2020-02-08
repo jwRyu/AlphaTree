@@ -74,17 +74,18 @@ public:
 	inline Imgidx top() { return minidx; }
 	inline Imgidx get_minlev() { return minidx >> 1; }
 	inline Imgidx min_incidence() { return minidx & 1; }
-	inline void push(Imgidx in, int8 incidence)
+	inline int8 push(Imgidx in, int8 incidence)
 	{
 		//curSize++; //tmp
 		//tmp
 /*		f << '0' << '\n' << in << endl;*/
-		push((in << 1) + incidence);
+		return push((in << 1) + incidence);
 	}
-	inline void push(Imgidx in)
+	inline int8 push(Imgidx in)
 	{
 		Imgidx n = in, s_in, shamt1;
 		Trieidx *p;
+		int8 ret;
 
 		//		curSize++; //tmp
 				//tmp
@@ -94,7 +95,12 @@ public:
 		s_in = n >> shamt;
 
 		if (n < minidx)
+		{
 			minidx = n;
+			ret = 0;
+		}
+		else
+			ret = 1;
 		p = &(trie[0][s_in]);
 		*p = *p | ((Trieidx)1 << (n & mask_field));
 		n = s_in;
@@ -112,6 +118,7 @@ public:
 #if TRIE_DEBUG
 		cursize++;
 #endif
+		return ret;
 	}
 	inline void pop()
 	{

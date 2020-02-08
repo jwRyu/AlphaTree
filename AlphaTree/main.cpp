@@ -214,8 +214,8 @@ int main(int argc, char **argv)
 	//uint8 testimg[4 * 4] = { 3,6,11,12,7,12,14,9,4,14,13,12,6,7,7,14 };
 	//uint8 testimg[4 * 4] = {3,2,13,8,3,11,11,6,15,3,10,13,9,8,5,15};
 	//uint8 testimg[4 * 4] = { 1,14,9,4,10,4,7,13,15,9,9,4,1,15,8,2 };
-	//uint8 testimg[4 * 4] = { 3,15,2,15,7,3,7,2,13,5,2,15,13,0,3,6 };
-	uint8 testimg[5 * 5] = {6,2,2,6,13,0,4,15,10,7,2,7,8,9,1,3,11,9,2,14,3,4,14,12,4};
+	uint8 testimg[4 * 4] = {2,0,7,9,0,4,1,9,4,10,6,5,13,6,10,2};
+	//uint8 testimg[5 * 5] = {6,2,2,6,13,0,4,15,10,7,2,7,8,9,1,3,11,9,2,14,3,4,14,12,4};
 	uint64 *hdrimg64;
 	uint32 *hdrimg32;
 	uint16 *hdrimg16;
@@ -247,9 +247,9 @@ int main(int argc, char **argv)
 	}
 	else
 		f.open(fname);
-	int start_al = 6;
-	// 0:HIERARCHICAL_QUEUE, 1:HIERARCHICAL_L1IDX_QUEUE, 2:HIERARCHICAL_L2IDX_QUEUE, 3:HEAP_QUEUE, 4:HEAP_RANK_QUEUE, 5:TRIE_QUEUE, 6:TRIE_HYBRID_QUEUE
-	for (int algorithm = start_al; algorithm < 7; algorithm++)
+	int start_al = 5;
+	// 0:HIERARCHICAL_QUEUE, 1:HIERARCHICAL_L1IDX_QUEUE, 2:HIERARCHICAL_L2IDX_QUEUE, 3:HEAP_QUEUE, 4:HEAP_RANK_QUEUE, 5:TRIE_QUEUE, 6:TRIE_HYBRID_QUEUE 7:Hieararqueue_rank
+	for (int algorithm = start_al; algorithm < 8; algorithm++)
 	{
 		int bit_depth_lim = 64;
 		if (algorithm == 0)
@@ -258,7 +258,7 @@ int main(int argc, char **argv)
 			bit_depth_lim = 26;
 		if (algorithm == 2)
 			bit_depth_lim = 30;
-		for (bit_depth = 32; bit_depth <= bit_depth_lim; bit_depth+=2)
+		for (bit_depth = 64; bit_depth <= bit_depth_lim; bit_depth+=2)
 		{
 			//tmp
 			//if(algorithm < 3)// || algorithm == 6 && bit_depth < 28)
@@ -338,7 +338,7 @@ int main(int argc, char **argv)
 								hdrimg64 = (uint64*)malloc(width * height * sizeof(uint64)) ;
 								RandomizedHDRimage(hdrimg64, (uint8*)(cvimg.data), height * width, (int8)bit_depth);
 							}
-							if (bit_depth > 16)
+							else if (bit_depth > 16)
 							{
 								hdrimg32 = (uint32*)malloc(width * height * sizeof(uint32));
 								RandomizedHDRimage(hdrimg32, (uint8*)(cvimg.data), height * width, (int8)bit_depth);
@@ -369,20 +369,20 @@ int main(int argc, char **argv)
 							tree = new AlphaTree(bit_depth);// (AlphaTree*)Malloc(sizeof(AlphaTree));
 							//		start = clock();
 
-							//Randomizedimage(testimg, 5 * 5);
+// 							if(testrep || cnt > 1) Randomizedimage(testimg, 4 * 4);
 // 							int kk = 0;
 // 							cout << "--------" << endl;
-// 							for (int ii = 0; ii < 5; ii++)
+// 							for (int ii = 0; ii < 4; ii++)
 // 							{
-// 								for (int jj = 0; jj < 5; jj++)
+// 								for (int jj = 0; jj < 4; jj++)
 // 								{
 // 									cout << (int)testimg[kk++] << ' ';
 // 								}
 // 								cout << endl;
 // 							}
-// 
+
 // 							cout << "running alg 0" << endl;
-// 							tree->BuildAlphaTree(testimg, 5, 5, 1, 4, 0);
+//							tree->BuildAlphaTree(testimg, 4, 4, 1, 4, algorithm);
 // 							//tree->BuildAlphaTree(cvimg.data, height, width, channel, 4, 0);
 // 							cout << (int)bit_depth << " Time Elapsed: " << 0 << "# Nodes: " << tree->get_curSize() << endl;
 // 
@@ -399,9 +399,9 @@ int main(int argc, char **argv)
 							if (bit_depth > 8)
 							{
 
-								if (bit_depth > 32)	tree->BuildAlphaTree(hdrimg64, height, width, channel, 4, algorithm);
-								if (bit_depth > 16)	tree->BuildAlphaTree(hdrimg32, height, width, channel, 4, algorithm);
-								else				tree->BuildAlphaTree(hdrimg16, height, width, channel, 4, algorithm);
+								if (bit_depth > 32)			tree->BuildAlphaTree(hdrimg64, height, width, channel, 4, algorithm);
+								else if (bit_depth > 16)	tree->BuildAlphaTree(hdrimg32, height, width, channel, 4, algorithm);
+								else						tree->BuildAlphaTree(hdrimg16, height, width, channel, 4, algorithm);
 							}
 							else
 								tree->BuildAlphaTree(cvimg.data, height, width, channel, 4, algorithm);
