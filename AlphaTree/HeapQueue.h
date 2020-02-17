@@ -1,9 +1,11 @@
 
-#define PQ_DEBUG 0
-#if PQ_DEBUG
+#define HEAPQ_STAT 1
+#if HEAPQ_STAT
 #include <iostream>
 #include <fstream>
+using namespace std;
 #endif
+
 
 template<class Imgidx, class Pixel>
 class HQentry
@@ -32,8 +34,9 @@ class HeapQueue
 	Pixel max_level;
 	HQentry<Imgidx, Pixel> pushlist[7];//Connectivity - 1
 	int8 pushlistidx;
-#if PQ_DEBUG
-	std::fstream fs;
+#if HEAPQ_STAT
+	ofstream f;
+	Imgidx popcnt;
 #endif
 public:
 //	Pixel min_level;
@@ -41,8 +44,9 @@ public:
 	{
 		arr = new HQentry<Imgidx, Pixel>[maxsize + 1];
 		pushlistidx = 0;
-#if PQ_DEBUG
-		this->fs.open("D:/RUG/2019/TTMA_ISMM/qstat.dat", std::fstream::out);
+#if HEAPQ_STAT
+		this->f.open("D:/RUG/2019/TTMA_ISMM/qstat.dat", ofstream::out);
+		popcnt = 0;
 #endif
 		max_level = (Pixel)-1;
 	}
@@ -51,8 +55,8 @@ public:
 	{
 		delete[] arr;
 
-#if PQ_DEBUG
-		fs.close();
+#if HEAPQ_STAT
+		f.close();
 #endif
 	}
 
@@ -132,8 +136,8 @@ public:
 	//		curidx = curidx;
 		cursize--;
 
-#if PQ_DEBUG
-		fs << "1" << std::endl << (int)arr[1].alpha << std::endl;
+#if HEAPQ_STAT
+		f << "1" << std::endl << (int)arr[1].alpha << std::endl;
 #endif
 		while (1)
 		{
@@ -180,8 +184,8 @@ public:
 	{
 		Imgidx current, next;
 
-#if PQ_DEBUG
-		fs << "0" << std::endl << (int)alpha << std::endl;
+#if HEAPQ_STAT
+		f << "0" << std::endl << (int)alpha << std::endl;
 #endif
 		//		value val_cur = tree[pixpos].gval;
 		cursize++;
@@ -212,28 +216,36 @@ public:
 template<class Imgidx>
 class HeapQueue_rank
 {
-	Imgidx cursize;
-	Imgidx maxsize;
+	
 	Imgidx *arr;
-#if PQ_DEBUG
-	std::fstream fs;
+#if HEAPQ_STAT
+	ofstream f;
+	Imgidx *depth;
+	Imgidx cur_depth;
+	Imgidx popcnt;
 #endif
 public:
+	Imgidx cursize;
+	Imgidx maxsize;
 	Imgidx min_level;
-	HeapQueue_rank(Imgidx maxsize) : cursize(0), maxsize(maxsize)
+	HeapQueue_rank(Imgidx maxsize_in) : cursize(0), maxsize(maxsize_in)
 	{
-		arr = new Imgidx[maxsize + 1];
-#if PQ_DEBUG
-		this->fs.open("D:/RUG/2019/TTMA_ISMM/qstat.dat", std::fstream::out);
+		arr = new Imgidx[maxsize];
+		arr--;
+#if HEAPQ_STAT
+		popcnt = 0;
+		f.open("D:/RUG/2019/TTMA_ISMM/qstat.dat", std::ofstream::app);
+		f << -1 << '\n' << maxsize << endl;
+		depth = (Imgidx*)Calloc(maxsize * sizeof(Imgidx));
 #endif
 
 	}
 	~HeapQueue_rank()
 	{
-		delete[] arr;
+		delete[] (arr + 1);
 
-#if PQ_DEBUG
-		fs.close();
+#if HEAPQ_STAT
+		f.close();
 #endif
 	}
 
@@ -267,12 +279,12 @@ public:
 
 		outval = arr[current];
 		curidx = arr[cursize--];
-		//curalpha = arr[cursize].alpha;
-		//		if (curidx < 0)
-			//		curidx = curidx;
-
-#if PQ_DEBUG
-		fs << "1" << std::endl << (int)arr[1].alpha << std::endl;
+#if HEAPQ_STAT
+		Imgidx curdepth = depth[cursize + 1];
+		cur_depth = cur_depth > depth[1] ? cur_depth : depth[1];
+		f << '1' << std::endl << arr[1] << std::endl << cur_depth++ << std::endl;
+		if (popcnt++ % 3000 == 0)
+			cout << "pop " << popcnt << '/' << maxsize << endl;
 #endif
 		while (1)
 		{
@@ -289,9 +301,16 @@ public:
 				break;
 
 			arr[current] = arr[next];
+#if HEAPQ_STAT
+			depth[current] = depth[next];
+#endif
 			current = next;
 		}
 		arr[current] = curidx;
+#if HEAPQ_STAT
+		depth[current] = curdepth;
+		f << arr[1] - min_level << endl;
+#endif
 
 		if (cursize)
 			min_level = arr[1];
@@ -306,8 +325,8 @@ public:
 	{
 		Imgidx current, next;
 
-#if PQ_DEBUG
-		fs << "0" << std::endl << (int)alpha << std::endl;
+#if HEAPQ_STAT
+		f << '0' << '\n' << pidx << endl;
 #endif
 		//		value val_cur = tree[pixpos].gval;
 		cursize++;
@@ -320,14 +339,38 @@ public:
 		while (next && (arr[next] > pidx))
 		{
 			arr[current] = arr[next];
+#if HEAPQ_STAT
+			depth[current] = depth[next];
+#endif
 			current = next;
 			next = next >> 1;
 		}
 
 		arr[current] = pidx;
+#if HEAPQ_STAT
+		depth[current] = 0;
+#endif
 
 		if (current == 1)
+		{
 			min_level = pidx;
+#if HEAPQ_STAT
+			if (cursize > 2)
+			{
+				if (arr[2] < arr[3])
+					depth[2] = depth[2] > cur_depth? depth[2] : cur_depth;
+				else
+					depth[3] = depth[3] > cur_depth ? depth[3] : cur_depth;
+			}
+			else if (cursize > 1)
+				depth[2] = depth[2] > cur_depth ? depth[2] : cur_depth;
+			cur_depth = 0;
+#endif
+		}
 		//validate();
 	}
+
+	//for hybrid queueing
+// 	inline Imgidx get_arr(Imgidx arridx) { return arr[arridx]; }
+// 	inline void set_arr(Imgidx arridx, Imgidx val) { arr[arridx] = val; }
 };

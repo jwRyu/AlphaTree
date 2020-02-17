@@ -335,6 +335,125 @@ public:
 
 
 
+
+
+template <class Imgidx>
+class HQueue_l1idx_rank
+{
+	struct hqueue_word
+	{
+		int64 qword[64];
+		int64 seeker;
+	};
+
+	hqueue_word *queue;
+public:
+	int64 qsize, seekersize;
+	int64 min_level;
+//	double jumpdist, jumpnum;
+	HQueue_l1idx_rank(int64 qsize_in)
+	{
+// 		jumpnum = 0;
+// 		jumpdist = 0;
+		//tmp
+		qsize = (qsize_in + (1<<12)) >> 12;
+		queue = (hqueue_word *)Calloc((size_t)qsize * sizeof(hqueue_word));
+		
+		min_level = qsize_in;
+	}
+	~HQueue_l1idx_rank()
+	{
+		Free(queue);
+	}
+
+	inline void push(Imgidx pidx)
+	{
+		int64 qidx = pidx >> 12;
+		int64 widx = (pidx >> 6) & 63;
+		int64 bitpos = pidx & 63;
+		
+		queue[qidx].qword[widx] |= (int64)1 << (bitpos);
+		queue[qidx].seeker |= (int64)1 << (widx);
+		min_level = min_level < pidx ? min_level : pidx;
+	}
+
+	inline void pop()
+	{
+		int64 qidx = min_level >> 12;
+		int64 widx = (min_level >> 6) & 63;
+		int64 bitpos = min_level & 63;
+		int64 w, skr;
+
+		queue[qidx].qword[widx] &= ~((int64)1 << (bitpos));
+		if(!queue[qidx].qword[widx])
+			queue[qidx].seeker &= ~((int64)1 << (widx));
+
+		//find_min_level
+		for (qidx = min_level >> 12; !queue[qidx].seeker; qidx++)
+			;
+
+		skr = queue[qidx].seeker;
+		widx = (skr & 0xffffffff) ? 0 : 32;
+		widx += ((skr >> widx) & 0xffff) ? 0 : 16;
+		widx += ((skr >> widx) & 0xff) ? 0 : 8;
+		widx += ((skr >> widx) & 0xf) ? 0 : 4;
+		widx += ((skr >> widx) & 0x3) ? 0 : 2;
+		widx += ((skr >> widx) & 0x1) ? 0 : 1;
+
+		w = queue[qidx].qword[widx];
+		bitpos = (w & 0xffffffff) ? 0 : 32;
+		bitpos += ((w >> bitpos) & 0xffff) ? 0 : 16;
+		bitpos += ((w >> bitpos) & 0xff) ? 0 : 8;
+		bitpos += ((w >> bitpos) & 0xf) ? 0 : 4;
+		bitpos += ((w >> bitpos) & 0x3) ? 0 : 2;
+		bitpos += ((w >> bitpos) & 0x1) ? 0 : 1;
+
+// 		jumpdist += (double)((qidx << 12) + (widx << 6) + bitpos) - (double)min_level;
+// 		jumpnum++;
+
+		min_level = (qidx << 12) + (widx << 6) + bitpos;
+	}
+
+	inline Imgidx top()
+	{
+		return min_level;
+	}
+
+	inline int64 get_minlev()
+	{
+		return min_level;
+	}
+
+	inline void find_minlev()
+	{
+		int64 qidx, widx, bitpos, w, skr;
+
+		for (qidx = min_level >> 12; !queue[qidx].seeker; qidx++)
+			;
+
+		skr = queue[qidx].seeker;
+		widx = (skr & 0xffffffff) ? 0 : 32;
+		widx += ((skr >> widx) & 0xffff) ? 0 : 16;
+		widx += ((skr >> widx) & 0xff) ? 0 : 8;
+		widx += ((skr >> widx) & 0xf) ? 0 : 4;
+		widx += ((skr >> widx) & 0x3) ? 0 : 2;
+		widx += ((skr >> widx) & 0x1) ? 0 : 1;
+
+		w = queue[qidx].qword[widx];
+		bitpos = (w & 0xffffffff) ? 0 : 32;
+		bitpos += ((w >> bitpos) & 0xffff) ? 0 : 16;
+		bitpos += ((w >> bitpos) & 0xff) ? 0 : 8;
+		bitpos += ((w >> bitpos) & 0xf) ? 0 : 4;
+		bitpos += ((w >> bitpos) & 0x3) ? 0 : 2;
+		bitpos += ((w >> bitpos) & 0x1) ? 0 : 1;
+
+		min_level = (qidx << 12) + (widx << 6) + bitpos;
+ 	}
+};
+
+
+
+
 /*
 template <class Imgidx>
 class HQueue_ubr

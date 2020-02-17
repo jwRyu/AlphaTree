@@ -24,7 +24,7 @@ using namespace std;
 
 #define INPUTIMAGE_DIR	"D:/RUG/2018/AlphaTree/imgdata/Grey"
 #define INPUTIMAGE_DIR_COLOUR	"D:/RUG/2018/AlphaTree/imgdata/Colour" //colour images are used after rgb2grey conversion
-#define REPEAT 1
+#define REPEAT 10
 #define RUN_TSE_ONLY 0
 
 #define DEBUG 0
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
 	}
 	else
 		f.open(fname);
-	int start_al = 5;
+	int start_al = 7;
 	// 0:HIERARCHICAL_QUEUE, 1:HIERARCHICAL_L1IDX_QUEUE, 2:HIERARCHICAL_L2IDX_QUEUE, 3:HEAP_QUEUE, 4:HEAP_RANK_QUEUE, 5:TRIE_QUEUE, 6:TRIE_HYBRID_QUEUE 7:Hieararqueue_rank
 	for (int algorithm = start_al; algorithm < 8; algorithm++)
 	{
@@ -382,7 +382,7 @@ int main(int argc, char **argv)
 // 							}
 
 // 							cout << "running alg 0" << endl;
-//							tree->BuildAlphaTree(testimg, 4, 4, 1, 4, algorithm);
+// 							tree->BuildAlphaTree(testimg, 4, 4, 1, 4, algorithm);
 // 							//tree->BuildAlphaTree(cvimg.data, height, width, channel, 4, 0);
 // 							cout << (int)bit_depth << " Time Elapsed: " << 0 << "# Nodes: " << tree->get_curSize() << endl;
 // 
@@ -404,9 +404,9 @@ int main(int argc, char **argv)
 								else						tree->BuildAlphaTree(hdrimg16, height, width, channel, 4, algorithm);
 							}
 							else
-								tree->BuildAlphaTree(cvimg.data, height, width, channel, 4, algorithm);
+								tree->BuildAlphaTree(cvimg.data, height >> 2, width, channel, 4, algorithm);
 							
-						
+							//return 0;
 						//BuildAlphaTree(tree, hdrimg, height, width, channel, bit_depth);
 						//BuildAlphaTree(tree, testimg, 4, 4, 1);
 

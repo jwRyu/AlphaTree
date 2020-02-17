@@ -1725,9 +1725,8 @@ class ATree
 	imgsize = width * height;																								\
 	nredges = width * (height - 1) + (width - 1) * height + ((connectivity == 8) ? ((width - 1) * (height - 1) * 2) : 0);	\
 	dimgsize = (connectivity >> 1) * width * height;																		\
-	isVisited = (uint8*)Malloc((size_t)((imgsize)));																		\
+	isVisited = (uint8*)Calloc((size_t)((imgsize)));																		\
 	isAvailable = (uint8*)Malloc((size_t)(imgsize));																		\
-	memset(isVisited, 0, (size_t)((imgsize)));																				\
 	init_isAvailable(isAvailable);																							\
 	rankinfo = (RankItem<Imgidx, Pixel>*)Malloc(nredges * sizeof(RankItem<Imgidx, Pixel>));									\
 	rank = (Imgidx*)Malloc((size_t)dimgsize * sizeof(Imgidx));																\
@@ -1763,161 +1762,91 @@ class ATree
 			pNode->set(0, pRank->alpha, 0.0, maxpixval, 0, pix_type); //init inner nodes
 	}
 
-#define	_RANK_PUSH_NEIGHBOURS_4N(rettype) {\
-	q = p << 1;\
-	(is_available(isAv, 0) && !isVisited[p + width]) ? queue->push(rank[q]) : (rettype)0;\
-	(is_available(isAv, 1) && !isVisited[p + 1]) ? queue->push(rank[q + 1]) : (rettype)0;\
-	(is_available(isAv, 2) && !isVisited[p - 1]) ? queue->push(rank[q - 1]) : (rettype)0;\
+#define	_RANK_PUSH_NEIGHBOURS_4N(rettype) {														\
+	q = p << 1;																					\
+	(is_available(isAv, 0) && !isVisited[p + width]) ? queue->push(rank[q]) : (rettype)0;		\
+	(is_available(isAv, 1) && !isVisited[p + 1]) ? queue->push(rank[q + 1]) : (rettype)0;		\
+	(is_available(isAv, 2) && !isVisited[p - 1]) ? queue->push(rank[q - 1]) : (rettype)0;		\
 	(is_available(isAv, 3) && !isVisited[p - width]) ? queue->push(rank[q - (width << 1)]) : (rettype)0;}
 
-#define	_RANK_PUSH_NEIGHBOURS_8N(rettype) {\
-	q = p << 2;\
-	(is_available(isAv, 0) && !isVisited[p + wstride1]) ? queue->push(rank[q]) : (rettype)0;\
-	(is_available(isAv, 1) && !isVisited[p + width]) ? queue->push(rank[q + 1]) : (rettype)0;\
-	(is_available(isAv, 2) && !isVisited[p + wstride0]) ? queue->push(rank[q + 2]) : (rettype)0;\
-	(is_available(isAv, 3) && !isVisited[p + 1]) ? queue->push(rank[q + 3]) : (rettype)0;\
+#define	_RANK_PUSH_NEIGHBOURS_8N(rettype) {																	\
+	q = p << 2;																								\
+	(is_available(isAv, 0) && !isVisited[p + wstride1]) ? queue->push(rank[q]) : (rettype)0;				\
+	(is_available(isAv, 1) && !isVisited[p + width]) ? queue->push(rank[q + 1]) : (rettype)0;				\
+	(is_available(isAv, 2) && !isVisited[p + wstride0]) ? queue->push(rank[q + 2]) : (rettype)0;			\
+	(is_available(isAv, 3) && !isVisited[p + 1]) ? queue->push(rank[q + 3]) : (rettype)0;					\
 	(is_available(isAv, 4) && !isVisited[p - wstride1]) ? queue->push(rank[q - wstride_d + 4]) : (rettype)0;\
-	(is_available(isAv, 5) && !isVisited[p - width]) ? queue->push(rank[q - wstride_d + 1]) : (rettype)0;\
+	(is_available(isAv, 5) && !isVisited[p - width]) ? queue->push(rank[q - wstride_d + 1]) : (rettype)0;	\
 	(is_available(isAv, 6) && !isVisited[p - wstride0]) ? queue->push(rank[q - wstride_d - 2]) : (rettype)0;\
 	(is_available(isAv, 7) && !isVisited[p - 1]) ? queue->push(rank[q - 1]) : (rettype)0;}
 
 #define _RANK_REMOVE_REDUNDANT_NODE \
 	(node_in[prev_top].parentidx == current_rank && node_in[prev_top].area == node_in[current_rank].area) ? current_rank = prev_top : (Imgidx)0;
 	
-	void Flood_HQueue_Rank(Pixel* img)
+	void Flood_HierarQueue_Rank(Pixel* img)
 	{
-		//HierarQueue<Imgidx> *queue;
-		Trie<Imgidx,int64> *queue;
+		HybridQueue_HQueue_Rank1<Imgidx> *queue;
 
-		Imgidx imgsize, dimgsize, nredges;																						
-		Imgidx current_rank, next_rank;
-		RankItem<Imgidx, Pixel> *rankinfo, *pRank;
-		AlphaNode<Imgidx, Pixel> *pNode;
-		Pixel maxpixval;
-		Imgidx *rank;
-		int8 nbits;
-		Imgidx *dhist;
-		Imgidx prev_top;
-		//		uint8 *isVisited, /**isVisited_edges,*/ *isAvailable, isAv;		
-		uint8 isAv;
-		Imgidx p, q, wstride_d = width << 2, wstride0 = width + 1, wstride1 = width - 1;
-		imgsize = width * height;
-		nredges = width * (height - 1) + (width - 1) * height + ((connectivity == 8) ? ((width - 1) * (height - 1) * 2) : 0);
-		dimgsize = (connectivity >> 1) * width * height;
-		//		isVisited = (uint8*)Malloc((size_t)((imgsize)));																		
-		//		isAvailable = (uint8*)Malloc((size_t)(imgsize));																		
-		//memset(isVisited, 0, (size_t)((imgsize)));
-		//		init_isAvailable(isAvailable);																							
-		rankinfo = (RankItem<Imgidx, Pixel>*)Malloc(nredges * sizeof(RankItem<Imgidx, Pixel>));
-		rank = (Imgidx*)Malloc((size_t)dimgsize * sizeof(Imgidx));
-		maxSize = imgsize + nredges;
-		num_node = maxSize;
-		num_node_in = nredges;
-		parentAry = (Imgidx*)Malloc((size_t)imgsize * sizeof(int32));
-		node = (AlphaNode<Imgidx, Pixel>*)Malloc((size_t)maxSize * sizeof(AlphaNode<Imgidx, Pixel>));
-		node_in = node + imgsize;
-		nbits = ((sizeof(Pixel) << 3) - 1);
-		maxpixval = ~(1 << nbits);
+		_RANK_SET_COMMON_LOCALS
 
-		pixdata *pd;
+		queue = new HybridQueue_HQueue_Rank1<Imgidx>(nredges + 1, 32);
 
-		queue = new Trie<Imgidx, trieidx>(nredges);
-
-		pd = (pixdata *)Malloc(width * height * sizeof(pixdata));		
-
-		
-		compute_dimg(rank, rankinfo, pd, img); //yogi. performance penalty negligible.
+		compute_dimg(rank, rankinfo, img);
 		initialize_node(img, rankinfo, maxpixval);
 
-		pd[0].isVisited = 1;
-		(connectivity == 4) ? queue->push(rank[0]) : (int8)0;							
-		(connectivity == 4) ? queue->push(rank[1]) : (int8)0;
-		(connectivity == 8) ? queue->push(rank[1]) : (int8)0;
-		(connectivity == 8) ? queue->push(rank[2]) : (int8)0;
-		(connectivity == 8) ? queue->push(rank[3]) : (int8)0;							
-		current_rank = queue->top();													
-		node[0].connect_to_parent(&node_in[current_rank], current_rank + imgsize);		
-		prev_top = current_rank;
+		_RANK_INIT_FLOOD(void)
 
-		Imgidx poffset[4] = { width, 1, -1, -width };
-		Imgidx qoffset[4] = { 0, 1, -1, -(width << 1) };
-		uint8 mask = 0x3, erank, eidx, cnt;
-		while (1)
-		{
 			while (1)
 			{
-				//top_rank = queue->top();	//remove tmp variables later if possible
-				pRank = rankinfo + queue->top();
-				if (!pd[pRank->p].cnt)
+				while (1)
 				{
-					if (!pd[pRank->q].cnt)
+					top_rank = queue->top();	//remove tmp variables later if possible
+					pRank = rankinfo + top_rank;
+					if (isVisited[pRank->p])
+					{
+						if (isVisited[pRank->q])
+							break;
+						p = pRank->q;
+					}
+					else
+						p = pRank->p;
+					isVisited[p] = 1;
+					isAv = isAvailable[p];
+					if (connectivity == 4)	_RANK_PUSH_NEIGHBOURS_4N(void)
+					else					_RANK_PUSH_NEIGHBOURS_8N(void)
+
+						next_rank = queue->top();
+					node[p].connect_to_parent(&node_in[next_rank], next_rank + imgsize);
+					if (current_rank == next_rank)
 						break;
-					p = pRank->q;
+					current_rank = next_rank;
 				}
-				else
-					p = pRank->p;
-// 				if (!pd[p].cnt)
-// 					break;
-				
 
-				//isAv = pd[p].isAvailable;
-				if (connectivity == 4) {
-						q = p << 1; 
-						
-						erank = pd[p].edgerank;
-						cnt = pd[p].cnt - 1;
-						eidx = erank & mask;
-						next_rank = rank[q + qoffset[eidx]];
-						if (!pd[p].isVisited)
-						{							
-							node[p].connect_to_parent(&node_in[next_rank], next_rank + imgsize);
-							pd[p].isVisited = 1;
-						}
-						//should break here...
-						(pd[p + poffset[eidx]].isVisited || queue->push(next_rank)) &&
-						cnt && cnt-- && (eidx = (erank >> 2) & mask) < connectivity && (pd[p + poffset[eidx]].isVisited || queue->push(rank[q + qoffset[eidx]])) &&
-						cnt && cnt-- &&(eidx = (erank >> 4) & mask) < connectivity && (pd[p + poffset[eidx]].isVisited || queue->push(rank[q + qoffset[eidx]])) &&
-						cnt && cnt-- && (eidx = (erank >> 6) & mask) < connectivity && (pd[p + poffset[eidx]].isVisited || queue->push(rank[q + qoffset[eidx]]));
-						pd[p].edgerank = erank >> ((pd[p].cnt - cnt) << 1);
-						pd[p].cnt = cnt;
-						//for ()
-						//	;
-// 						(is_available(isAv, 0) && !pd[p + width].isVisited) ? queue->push(rank[q], 1) : (int8)0; 
-// 						(is_available(isAv, 1) && !pd[p + 1].isVisited) ? queue->push(rank[q + 1], 1) : (int8)0;
-// 						(is_available(isAv, 2) && !pd[p - 1].isVisited) ? queue->push(rank[q - 1], 0) : (int8)0;
-// 						(is_available(isAv, 3) && !pd[p - width].isVisited) ? queue->push(rank[q - (width << 1)], 0) : (int8)0;
-				}
-//				else					_RANK_PUSH_NEIGHBOURS_8N
+				queue->pop();
+				next_rank = queue->top();
 
-// 				next_rank = queue->top();
-// 				if (current_rank == next_rank)
-// 					break;
-//				current_rank = next_rank;
-				current_rank = queue->top();
+				_RANK_REMOVE_REDUNDANT_NODE
+
+					node_in[current_rank].connect_to_parent(&node_in[next_rank], next_rank);
+				if (node_in[next_rank].area == imgsize)
+					break;
+
+				prev_top = current_rank;
+				current_rank = next_rank;
 			}
-
-			queue->pop();
-			next_rank = queue->top();
-
-			_RANK_REMOVE_REDUNDANT_NODE
-
-			node_in[current_rank].connect_to_parent(&node_in[next_rank], next_rank);
-			if (node_in[next_rank].area == imgsize)
-				break;
-
-			prev_top = current_rank;
-			current_rank = next_rank;
-		}
 		if (node_in[current_rank].area == imgsize)
 			next_rank = current_rank;
+		//std::cout << "Mean jump dist: " << queue->jumpdist / queue->jumpnum << std::endl;
+//		std::cout << "Mean jump dist: " << queue->get_jumpdist() / queue->get_jumpnum() << std::endl;
 
 		delete queue;
 		Free(rank);
 		Free(rankinfo);
-//		Free(isVisited);
-//		Free(isAvailable);
-		Free(pd);
+		Free(isVisited);
+		Free(isAvailable);
 	}
+
+	
 
 
 	void Flood_HeapQueue_Rank(Pixel* img)
@@ -1926,7 +1855,7 @@ class ATree
 
 		_RANK_SET_COMMON_LOCALS
 
-			queue = new HeapQueue_rank<Imgidx>(nredges + 1);
+		queue = new HeapQueue_rank<Imgidx>(nredges + 1);
 
 		compute_dimg(rank, rankinfo, img);
 		initialize_node(img, rankinfo, maxpixval);
@@ -1973,6 +1902,7 @@ class ATree
 		}
 		if (node_in[current_rank].area == imgsize)
 			next_rank = current_rank;
+
 
 		delete queue;
 		Free(rank);
@@ -2104,6 +2034,141 @@ class ATree
 		Free(isAvailable);
 	}
 
+	void Flood_Trie_sorted(Pixel* img) //experimental
+	{
+		//HierarQueue<Imgidx> *queue;
+		Trie<Imgidx, int64> *queue;
+
+		Imgidx imgsize, dimgsize, nredges;
+		Imgidx current_rank, next_rank;
+		RankItem<Imgidx, Pixel> *rankinfo, *pRank;
+		AlphaNode<Imgidx, Pixel> *pNode;
+		Pixel maxpixval;
+		Imgidx *rank;
+		int8 nbits;
+		Imgidx *dhist;
+		Imgidx prev_top;
+		//		uint8 *isVisited, /**isVisited_edges,*/ *isAvailable, isAv;		
+		uint8 isAv;
+		Imgidx p, q, wstride_d = width << 2, wstride0 = width + 1, wstride1 = width - 1;
+		imgsize = width * height;
+		nredges = width * (height - 1) + (width - 1) * height + ((connectivity == 8) ? ((width - 1) * (height - 1) * 2) : 0);
+		dimgsize = (connectivity >> 1) * width * height;
+		//		isVisited = (uint8*)Malloc((size_t)((imgsize)));																		
+		//		isAvailable = (uint8*)Malloc((size_t)(imgsize));																		
+		//memset(isVisited, 0, (size_t)((imgsize)));
+		//		init_isAvailable(isAvailable);																							
+		rankinfo = (RankItem<Imgidx, Pixel>*)Malloc(nredges * sizeof(RankItem<Imgidx, Pixel>));
+		rank = (Imgidx*)Malloc((size_t)dimgsize * sizeof(Imgidx));
+		maxSize = imgsize + nredges;
+		num_node = maxSize;
+		num_node_in = nredges;
+		parentAry = (Imgidx*)Malloc((size_t)imgsize * sizeof(int32));
+		node = (AlphaNode<Imgidx, Pixel>*)Malloc((size_t)maxSize * sizeof(AlphaNode<Imgidx, Pixel>));
+		node_in = node + imgsize;
+		nbits = ((sizeof(Pixel) << 3) - 1);
+		maxpixval = ~(1 << nbits);
+
+		pixdata *pd;
+
+		queue = new Trie<Imgidx, trieidx>(nredges);
+
+		pd = (pixdata *)Malloc(width * height * sizeof(pixdata));
+
+
+		compute_dimg(rank, rankinfo, pd, img); //yogi. performance penalty negligible.
+		initialize_node(img, rankinfo, maxpixval);
+
+		pd[0].isVisited = 1;
+		(connectivity == 4) ? queue->push(rank[0]) : (int8)0;
+		(connectivity == 4) ? queue->push(rank[1]) : (int8)0;
+		(connectivity == 8) ? queue->push(rank[1]) : (int8)0;
+		(connectivity == 8) ? queue->push(rank[2]) : (int8)0;
+		(connectivity == 8) ? queue->push(rank[3]) : (int8)0;
+		current_rank = queue->top();
+		node[0].connect_to_parent(&node_in[current_rank], current_rank + imgsize);
+		prev_top = current_rank;
+
+		Imgidx poffset[4] = { width, 1, -1, -width };
+		Imgidx qoffset[4] = { 0, 1, -1, -(width << 1) };
+		uint8 mask = 0x3, erank, eidx, cnt;
+		while (1)
+		{
+			while (1)
+			{
+				//top_rank = queue->top();	//remove tmp variables later if possible
+				pRank = rankinfo + queue->top();
+				if (!pd[pRank->p].cnt)
+				{
+					if (!pd[pRank->q].cnt)
+						break;
+					p = pRank->q;
+				}
+				else
+					p = pRank->p;
+				// 				if (!pd[p].cnt)
+				// 					break;
+
+
+								//isAv = pd[p].isAvailable;
+				if (connectivity == 4) {
+					q = p << 1;
+
+					erank = pd[p].edgerank;
+					cnt = pd[p].cnt - 1;
+					eidx = erank & mask;
+					next_rank = rank[q + qoffset[eidx]];
+					if (!pd[p].isVisited)
+					{
+						node[p].connect_to_parent(&node_in[next_rank], next_rank + imgsize);
+						pd[p].isVisited = 1;
+					}
+					//should break here...
+					(pd[p + poffset[eidx]].isVisited || queue->push(next_rank)) &&
+						cnt && cnt-- && (eidx = (erank >> 2) & mask) < connectivity && (pd[p + poffset[eidx]].isVisited || queue->push(rank[q + qoffset[eidx]])) &&
+						cnt && cnt-- && (eidx = (erank >> 4) & mask) < connectivity && (pd[p + poffset[eidx]].isVisited || queue->push(rank[q + qoffset[eidx]])) &&
+						cnt && cnt-- && (eidx = (erank >> 6) & mask) < connectivity && (pd[p + poffset[eidx]].isVisited || queue->push(rank[q + qoffset[eidx]]));
+					pd[p].edgerank = erank >> ((pd[p].cnt - cnt) << 1);
+					pd[p].cnt = cnt;
+					//for ()
+					//	;
+// 						(is_available(isAv, 0) && !pd[p + width].isVisited) ? queue->push(rank[q], 1) : (int8)0; 
+// 						(is_available(isAv, 1) && !pd[p + 1].isVisited) ? queue->push(rank[q + 1], 1) : (int8)0;
+// 						(is_available(isAv, 2) && !pd[p - 1].isVisited) ? queue->push(rank[q - 1], 0) : (int8)0;
+// 						(is_available(isAv, 3) && !pd[p - width].isVisited) ? queue->push(rank[q - (width << 1)], 0) : (int8)0;
+				}
+				//				else					_RANK_PUSH_NEIGHBOURS_8N
+
+				// 				next_rank = queue->top();
+				// 				if (current_rank == next_rank)
+				// 					break;
+				//				current_rank = next_rank;
+				current_rank = queue->top();
+			}
+
+			queue->pop();
+			next_rank = queue->top();
+
+			_RANK_REMOVE_REDUNDANT_NODE
+
+				node_in[current_rank].connect_to_parent(&node_in[next_rank], next_rank);
+			if (node_in[next_rank].area == imgsize)
+				break;
+
+			prev_top = current_rank;
+			current_rank = next_rank;
+		}
+		if (node_in[current_rank].area == imgsize)
+			next_rank = current_rank;
+
+		delete queue;
+		Free(rank);
+		Free(rankinfo);
+		//		Free(isVisited);
+		//		Free(isAvailable);
+		Free(pd);
+	}
+
 public:
 	Imgidx maxSize;
 	Imgidx curSize;
@@ -2144,7 +2209,7 @@ public:
 		case(4): Flood_HeapQueue_Rank(img);	break;
 		case(5): Flood_Trie(img);		    break;
 		case(6): Flood_HybridQueue(img);	break;
-		case(7): Flood_HQueue_Rank(img);	break;
+		case(7): Flood_HierarQueue_Rank(img);	break;
 		default: break;
 		}
 	}
